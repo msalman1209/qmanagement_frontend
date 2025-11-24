@@ -1,12 +1,14 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { use, useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { selectCurrentUser } from '@/store/slices/authSlice';
 import { updateOwnProfile } from '@/store/thunks';
 import { updateUser } from '@/store/slices/authSlice';
 import { Eye, EyeOff } from 'lucide-react';
 
-export default function ProfilePage() {
+export default function ProfilePage({ params }) {
+  // Unwrap params if provided (for dynamic route)
+  const role = params ? use(params).role : null;
   const dispatch = useDispatch();
   const currentUser = useSelector(selectCurrentUser);
   

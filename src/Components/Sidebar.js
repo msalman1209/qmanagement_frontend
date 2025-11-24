@@ -1,8 +1,10 @@
 'use client';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
+import { useSelector } from 'react-redux';
+import { selectCurrentUser } from '@/store/slices/authSlice';
 import MainLogo from '@/Components/images/logo_main.jpg';
 import { FaUser, FaBell, FaTv, FaSignOutAlt } from 'react-icons/fa';
 import { MdSettings, MdDashboard } from 'react-icons/md';
@@ -12,16 +14,29 @@ import { IoChevronForward } from 'react-icons/io5';
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const currentUser = useSelector(selectCurrentUser);
   const [isServicesOpen, setIsServicesOpen] = useState(false);
   const [isReportsOpen, setIsReportsOpen] = useState(false);
   const [isUsersOpen, setIsUsersOpen] = useState(false);
+  const [role, setRole] = useState('superadmin');
+
+  useEffect(() => {
+    if (currentUser) {
+      const roleMapping = {
+        'super_admin': 'superadmin',
+        'admin': 'admin',
+        'user': 'user'
+      };
+      setRole(roleMapping[currentUser.role] || 'superadmin');
+    }
+  }, [currentUser]);
 
   const isActive = (path) => pathname === path;
 
   return (
     <aside className="w-64 bg-white border-r border-gray-200 h-screen sticky top-0 flex flex-col overflow-y-auto">
       {/* Logo */}
-      <Link href="/superadmin" className="border-gray-200 flex items-center justify-center p-2 ml-6">
+      <Link href={`/${role}`} className="border-gray-200 flex items-center justify-center p-2 ml-6">
         <Image 
           src={MainLogo} 
           alt="Tech Solutionor Logo" 
@@ -37,11 +52,11 @@ export default function Sidebar() {
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">MISC</p>
         </div>
 
-        {/* Profile */}
+        {/* Profile - Dynamic Route Support */}
         <Link
-          href="/superadmin/profile"
+          href={`/${role}/profile`}
           className={`flex items-center gap-3 px-6 py-3 text-gray-600 hover:bg-gray-50 transition-colors ${
-            isActive('/superadmin/profile') ? 'bg-gray-50 text-gray-900 border-r-2 border-green-500' : ''
+            pathname.includes('/profile') ? 'bg-gray-50 text-gray-900 border-r-2 border-green-500' : ''
           }`}
         >
           <FaUser className="text-lg" />
@@ -53,7 +68,7 @@ export default function Sidebar() {
           <button
             onClick={() => setIsServicesOpen(!isServicesOpen)}
             className={`flex items-center justify-between w-full px-6 py-3 text-gray-600 hover:bg-gray-50 transition-colors ${
-              pathname.startsWith('/superadmin/services') ? 'bg-gray-50 text-gray-900' : ''
+              pathname.includes('/services') ? 'bg-gray-50 text-gray-900' : ''
             }`}
           >
             <div className="flex items-center gap-3">
@@ -65,30 +80,30 @@ export default function Sidebar() {
           {isServicesOpen && (
             <div className="bg-gray-50">
               <Link
-                href="/superadmin/services/create-services"
+                href={`/${role}/services/create-services`}
                 className={`flex items-center gap-3 px-14 py-2 text-gray-600 hover:bg-gray-100 transition-colors ${
-                  isActive('/superadmin/services/create-services') ? 'text-green-600 font-medium' : ''
+                  pathname.includes('/services/create-services') ? 'text-green-600 font-medium' : ''
                 }`}
               >
                 <span className={`w-3 h-3 rounded-full border-2 flex items-center justify-center ${
-                  isActive('/superadmin/services/create-services') ? 'border-green-600' : 'border-gray-400'
+                  pathname.includes('/services/create-services') ? 'border-green-600' : 'border-gray-400'
                 }`}>
-                  {isActive('/superadmin/services/create-services') && (
+                  {pathname.includes('/services/create-services') && (
                     <span className="w-1.5 h-1.5 rounded-full bg-green-600"></span>
                   )}
                 </span>
                 <span className="text-sm">Create Services</span>
               </Link>
               <Link
-                href="/superadmin/services/assign-services"
+                href={`/${role}/services/assign-services`}
                 className={`flex items-center gap-3 px-14 py-2 text-gray-600 hover:bg-gray-100 transition-colors ${
-                  isActive('/superadmin/services/assign-services') ? 'text-green-600 font-medium' : ''
+                  pathname.includes('/services/assign-services') ? 'text-green-600 font-medium' : ''
                 }`}
               >
                 <span className={`w-3 h-3 rounded-full border-2 flex items-center justify-center ${
-                  isActive('/superadmin/services/assign-services') ? 'border-green-600' : 'border-gray-400'
+                  pathname.includes('/services/assign-services') ? 'border-green-600' : 'border-gray-400'
                 }`}>
-                  {isActive('/superadmin/services/assign-services') && (
+                  {pathname.includes('/services/assign-services') && (
                     <span className="w-1.5 h-1.5 rounded-full bg-green-600"></span>
                   )}
                 </span>
@@ -103,7 +118,7 @@ export default function Sidebar() {
           <button
             onClick={() => setIsReportsOpen(!isReportsOpen)}
             className={`flex items-center justify-between w-full px-6 py-3 text-gray-600 hover:bg-gray-50 transition-colors ${
-              pathname.startsWith('/superadmin/reports') ? 'bg-gray-50 text-gray-900' : ''
+              pathname.includes('/reports') ? 'bg-gray-50 text-gray-900' : ''
             }`}
           >
             <div className="flex items-center gap-3">
@@ -115,30 +130,30 @@ export default function Sidebar() {
           {isReportsOpen && (
             <div className="bg-gray-50">
               <Link
-                href="/superadmin/reports/short-reports"
+                href={`/${role}/reports/short-reports`}
                 className={`flex items-center gap-3 px-14 py-2 text-gray-600 hover:bg-gray-100 transition-colors ${
-                  isActive('/superadmin/reports/short-reports') ? 'text-green-600 font-medium' : ''
+                  pathname.includes('/reports/short-reports') ? 'text-green-600 font-medium' : ''
                 }`}
               >
                 <span className={`w-3 h-3 rounded-full border-2 flex items-center justify-center ${
-                  isActive('/superadmin/reports/short-reports') ? 'border-green-600' : 'border-gray-400'
+                  pathname.includes('/reports/short-reports') ? 'border-green-600' : 'border-gray-400'
                 }`}>
-                  {isActive('/superadmin/reports/short-reports') && (
+                  {pathname.includes('/reports/short-reports') && (
                     <span className="w-1.5 h-1.5 rounded-full bg-green-600"></span>
                   )}
                 </span>
                 <span className="text-sm">Short Reports</span>
               </Link>
               <Link
-                href="/superadmin/reports/details-reports"
+                href={`/${role}/reports/details-reports`}
                 className={`flex items-center gap-3 px-14 py-2 text-gray-600 hover:bg-gray-100 transition-colors ${
-                  isActive('/superadmin/reports/details-reports') ? 'text-green-600 font-medium' : ''
+                  pathname.includes('/reports/details-reports') ? 'text-green-600 font-medium' : ''
                 }`}
               >
                 <span className={`w-3 h-3 rounded-full border-2 flex items-center justify-center ${
-                  isActive('/superadmin/reports/details-reports') ? 'border-green-600' : 'border-gray-400'
+                  pathname.includes('/reports/details-reports') ? 'border-green-600' : 'border-gray-400'
                 }`}>
-                  {isActive('/superadmin/reports/details-reports') && (
+                  {pathname.includes('/reports/details-reports') && (
                     <span className="w-1.5 h-1.5 rounded-full bg-green-600"></span>
                   )}
                 </span>
@@ -150,9 +165,9 @@ export default function Sidebar() {
 
         {/* Configuration */}
         <Link
-          href="/superadmin/configuration"
+          href={`/${role}/configuration`}
           className={`flex items-center gap-3 px-6 py-3 text-gray-600 hover:bg-gray-50 transition-colors ${
-            isActive('/superadmin/configuration') ? 'bg-gray-50 text-gray-900 border-r-2 border-green-500' : ''
+            pathname.includes('/configuration') ? 'bg-gray-50 text-gray-900 border-r-2 border-green-500' : ''
           }`}
         >
           <FaBell className="text-lg" />
@@ -161,9 +176,9 @@ export default function Sidebar() {
 
         {/* Counter Display */}
         <Link
-          href="/superadmin/counter-display"
+          href={`/${role}/counter-display`}
           className={`flex items-center gap-3 px-6 py-3 text-gray-600 hover:bg-gray-50 transition-colors ${
-            isActive('/superadmin/counter-display') ? 'bg-gray-50 text-gray-900 border-r-2 border-green-500' : ''
+            pathname.includes('/counter-display') ? 'bg-gray-50 text-gray-900 border-r-2 border-green-500' : ''
           }`}
         >
           <FaTv className="text-lg" />
@@ -175,7 +190,7 @@ export default function Sidebar() {
           <button
             onClick={() => setIsUsersOpen(!isUsersOpen)}
             className={`flex items-center justify-between w-full px-6 py-3 text-gray-600 hover:bg-gray-50 transition-colors ${
-              pathname.startsWith('/superadmin/users') ? 'bg-gray-50 text-gray-900' : ''
+              pathname.includes('/users') ? 'bg-gray-50 text-gray-900' : ''
             }`}
           >
             <div className="flex items-center gap-3">
@@ -187,18 +202,18 @@ export default function Sidebar() {
           {isUsersOpen && (
             <div className="bg-gray-50">
               <Link
-                href="/superadmin/users/user-management"
+                href={`/${role}/users/user-management`}
                 className={`flex items-center gap-3 px-14 py-2 text-gray-600 hover:bg-gray-100 transition-colors ${
-                  isActive('/superadmin/users/user-management') ? 'text-gray-900 font-medium' : ''
+                  pathname.includes('/users/user-management') ? 'text-gray-900 font-medium' : ''
                 }`}
               >
                 <span className="text-xs">•</span>
                 <span className="text-sm">User Management</span>
               </Link>
               <Link
-                href="/superadmin/users/user-sessions"
+                href={`/${role}/users/user-sessions`}
                 className={`flex items-center gap-3 px-14 py-2 text-gray-600 hover:bg-gray-100 transition-colors ${
-                  isActive('/superadmin/users/user-sessions') ? 'text-gray-900 font-medium' : ''
+                  pathname.includes('/users/user-sessions') ? 'text-gray-900 font-medium' : ''
                 }`}
               >
                 <span className="text-xs">•</span>
@@ -210,9 +225,9 @@ export default function Sidebar() {
 
         {/* Display Screens Sessions */}
         <Link
-          href="/superadmin/display-screens-sessions"
+          href={`/${role}/display-screens-sessions`}
           className={`flex items-center gap-3 px-6 py-3 text-gray-600 hover:bg-gray-50 transition-colors ${
-            isActive('/superadmin/display-screens-sessions') ? 'bg-gray-50 text-gray-900 border-r-2 border-green-500' : ''
+            pathname.includes('/display-screens-sessions') ? 'bg-gray-50 text-gray-900 border-r-2 border-green-500' : ''
           }`}
         >
           <MdDashboard className="text-lg" />
@@ -221,9 +236,9 @@ export default function Sidebar() {
 
         {/* User Dashboard Btns */}
         <Link
-          href="/superadmin/user-dashboard-btns"
+          href={`/${role}/user-dashboard-btns`}
           className={`flex items-center gap-3 px-6 py-3 text-gray-600 hover:bg-gray-50 transition-colors ${
-            isActive('/superadmin/user-dashboard-btns') ? 'bg-gray-50 text-gray-900 border-r-2 border-green-500' : ''
+            pathname.includes('/user-dashboard-btns') ? 'bg-gray-50 text-gray-900 border-r-2 border-green-500' : ''
           }`}
         >
           <FaTv className="text-lg" />
@@ -232,9 +247,9 @@ export default function Sidebar() {
 
         {/* Logout */}
         <Link
-          href="/superadmin/logout"
+          href={`/${role}/logout`}
           className={`flex items-center gap-3 px-6 py-3 text-gray-600 hover:bg-gray-50 transition-colors ${
-            isActive('/superadmin/logout') ? 'bg-gray-50 text-gray-900 border-r-2 border-green-500' : ''
+            pathname.includes('/logout') ? 'bg-gray-50 text-gray-900 border-r-2 border-green-500' : ''
           }`}
         >
           <FaSignOutAlt className="text-lg" />

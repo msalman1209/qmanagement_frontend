@@ -4,6 +4,11 @@ import { useAppDispatch } from '@/store/hooks';
 import { logout } from '@/store';
 import { useState } from 'react';
 
+// Helper to delete cookies
+const deleteCookie = (name) => {
+  document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/`;
+};
+
 export default function LogoutPage() {
   const router = useRouter();
   const dispatch = useAppDispatch();
@@ -27,8 +32,19 @@ export default function LogoutPage() {
     } catch (err) {
       console.error('Logout error:', err);
     } finally {
-      // Clear Redux state and localStorage
+      // Clear all authentication data
       dispatch(logout());
+      
+      // Clear cookies manually as well
+      deleteCookie('isAuthenticated');
+      deleteCookie('userRole');
+      deleteCookie('token');
+      
+      // Clear localStorage
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      
+      // Redirect to login
       router.push('/login');
     }
   };

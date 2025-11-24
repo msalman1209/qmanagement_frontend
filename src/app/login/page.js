@@ -42,11 +42,13 @@ export default function LoginPage() {
   useEffect(() => {
     if (isAuthenticated) {
       const user = JSON.parse(localStorage.getItem('user') || '{}');
-      if (user.role === 'super_admin' || user.role === 'admin') {
-        router.push('/superadmin');
-      } else {
-        router.push('/user');
-      }
+      const roleMapping = {
+        'super_admin': 'superadmin',
+        'admin': 'admin',
+        'user': 'user'
+      };
+      const mappedRole = roleMapping[user.role] || 'user';
+      router.push(`/${mappedRole}`);
     }
   }, [isAuthenticated, router]);
 
@@ -118,9 +120,15 @@ export default function LoginPage() {
         // Show success message
         showToast('Login successful!', 'success');
 
-        // Redirect to admin dashboard
+        // Redirect based on role
         setTimeout(() => {
-          router.push('/superadmin');
+          const roleMapping = {
+            'super_admin': 'superadmin',
+            'admin': 'admin',
+            'user': 'user'
+          };
+          const mappedRole = roleMapping[data.user.role] || 'admin';
+          router.push(`/${mappedRole}`);
         }, 500);
         
         dispatch(setLoading(false));
@@ -155,11 +163,13 @@ export default function LoginPage() {
 
       // Redirect based on role
       setTimeout(() => {
-        if (data.user.role === 'super_admin' || data.user.role === 'admin') {
-          router.push('/superadmin');
-        } else {
-          router.push('/user');
-        }
+        const roleMapping = {
+          'super_admin': 'superadmin',
+          'admin': 'admin',
+          'user': 'user'
+        };
+        const mappedRole = roleMapping[data.user.role] || 'user';
+        router.push(`/${mappedRole}`);
       }, 500);
     } catch (err) {
       console.error('Login error:', err);

@@ -69,11 +69,11 @@ export default function UserSidebar({ username = 'user19', counter = '2' }) {
           <span className="text-sm font-normal">Completed Tasks</span>
         </Link>
 
-        {/* Profile */}
+        {/* Profile - Dynamic Route Support */}
         <Link
           href="/user/profile"
           className={`flex items-center gap-3 px-4 py-2.5 transition-colors ${
-            isActive('/user/profile') 
+            isActive('/user/profile') || pathname === '/user/profile'
               ? 'bg-green-50 text-green-600 border-r-4 border-green-600' 
               : 'text-gray-600 hover:bg-gray-50'
           }`}

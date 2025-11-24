@@ -3,41 +3,37 @@ import { NextResponse } from 'next/server'
 export function middleware(request) {
   const { pathname } = request.nextUrl
   
-  // Get token from cookies or check if exists in request
-  const token = request.cookies.get('token')?.value || 
-                request.headers.get('authorization')?.replace('Bearer ', '')
-  
-  // Check localStorage token via cookie (set by client)
+  // Check authentication via cookie
   const hasAuth = request.cookies.get('isAuthenticated')?.value === 'true'
+  const userRole = request.cookies.get('userRole')?.value
   
   // Public paths that don't require authentication
   const publicPaths = ['/login']
-  
-  // Check if current path is public
   const isPublicPath = publicPaths.some(path => pathname === path)
   
-  // If it's a public path, allow access
+  // Allow public paths
   if (isPublicPath) {
-    // If user is authenticated and trying to access login, redirect to dashboard
-    if (pathname === '/login' && hasAuth) {
-      const userRole = request.cookies.get('userRole')?.value
-      
-      if (userRole === 'super_admin' || userRole === 'admin') {
-        return NextResponse.redirect(new URL('/superadmin', request.url))
-      } else {
-        return NextResponse.redirect(new URL('/user', request.url))
+    // If authenticated user tries to access login, redirect to their dashboard
+    if (pathname === '/login' && hasAuth && userRole) {
+      const roleMapping = {
+        'super_admin': 'superadmin',
+        'admin': 'admin',
+        'user': 'user'
       }
+      const mappedRole = roleMapping[userRole] || 'user'
+      return NextResponse.redirect(new URL(`/${mappedRole}`, request.url))
     }
     return NextResponse.next()
   }
   
-  // All other paths are protected
+  // Protected routes - require authentication
   if (!hasAuth) {
     const loginUrl = new URL('/login', request.url)
     loginUrl.searchParams.set('redirect', pathname)
     return NextResponse.redirect(loginUrl)
   }
   
+  // Allow access to role-based routes - ProtectedRoute component will handle role validation
   return NextResponse.next()
 }
 
