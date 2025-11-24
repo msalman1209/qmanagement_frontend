@@ -1,11 +1,9 @@
 'use client';
 import Link from 'next/link';
-import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { useSelector } from 'react-redux';
 import { selectCurrentUser } from '@/store/slices/authSlice';
-import MainLogo from '@/Components/images/logo_main.jpg';
 import { FaUser, FaBell, FaTv, FaSignOutAlt } from 'react-icons/fa';
 import { MdSettings, MdDashboard } from 'react-icons/md';
 import { HiDocumentReport } from 'react-icons/hi';
@@ -18,34 +16,17 @@ export default function Sidebar() {
   const [isServicesOpen, setIsServicesOpen] = useState(false);
   const [isReportsOpen, setIsReportsOpen] = useState(false);
   const [isUsersOpen, setIsUsersOpen] = useState(false);
-  const [role, setRole] = useState('superadmin');
 
-  useEffect(() => {
-    if (currentUser) {
-      const roleMapping = {
-        'super_admin': 'superadmin',
-        'admin': 'admin',
-        'user': 'user'
-      };
-      setRole(roleMapping[currentUser.role] || 'superadmin');
-    }
-  }, [currentUser]);
+  // Extract role from pathname instead of using state
+  const role = pathname.split('/')[1] || 'admin';
+  
+  // Check if user is super admin
+  const isSuperAdmin = currentUser?.role === 'super_admin';
 
   const isActive = (path) => pathname === path;
 
   return (
     <aside className="w-64 bg-white border-r border-gray-200 h-screen sticky top-0 flex flex-col overflow-y-auto">
-      {/* Logo */}
-      <Link href={`/${role}`} className="border-gray-200 flex items-center justify-center p-2 ml-6">
-        <Image 
-          src={MainLogo} 
-          alt="Tech Solutionor Logo" 
-          width={220} 
-          height={50}
-          className="h-auto object-contain"
-        />
-      </Link>
-
       {/* Navigation */}
       <nav className="flex-1 py-4 ml-4">
         <div className="px-4 mb-4">
@@ -53,7 +34,7 @@ export default function Sidebar() {
         </div>
 
         {/* Profile - Dynamic Route Support */}
-        <Link
+        {/* <Link
           href={`/${role}/profile`}
           className={`flex items-center gap-3 px-6 py-3 text-gray-600 hover:bg-gray-50 transition-colors ${
             pathname.includes('/profile') ? 'bg-gray-50 text-gray-900 border-r-2 border-green-500' : ''
@@ -61,7 +42,7 @@ export default function Sidebar() {
         >
           <FaUser className="text-lg" />
           <span className="text-sm font-medium">Profile</span>
-        </Link>
+        </Link> */}
 
         {/* Services */}
         <div>
@@ -195,29 +176,42 @@ export default function Sidebar() {
           >
             <div className="flex items-center gap-3">
               <FaUsers className="text-lg" />
-              <span className="text-sm font-medium">Users</span>
+              <span className="text-sm font-medium">Users & Permissions</span>
             </div>
             <IoChevronForward className={`text-sm transition-transform ${isUsersOpen ? 'rotate-90' : ''}`} />
           </button>
           {isUsersOpen && (
             <div className="bg-gray-50">
+              {/* Create Admin - Only for Super Admin */}
+              {isSuperAdmin && (
+                <Link
+                  href={`/${role}/users/create-admin`}
+                  className={`flex items-center gap-3 px-14 py-2 text-gray-600 hover:bg-gray-100 transition-colors ${
+                    pathname.includes('/users/create-admin') ? 'text-gray-900 font-medium' : ''
+                  }`}
+                >
+                  <span className="text-xs">•</span>
+                  <span className="text-sm">Create Admin</span>
+                </Link>
+              )}
+              
               <Link
-                href={`/${role}/users/user-management`}
+                href={`/${role}/users/create-user`}
                 className={`flex items-center gap-3 px-14 py-2 text-gray-600 hover:bg-gray-100 transition-colors ${
-                  pathname.includes('/users/user-management') ? 'text-gray-900 font-medium' : ''
+                  pathname.includes('/users/create-user') ? 'text-gray-900 font-medium' : ''
                 }`}
               >
                 <span className="text-xs">•</span>
-                <span className="text-sm">User Management</span>
+                <span className="text-sm">Create User</span>
               </Link>
               <Link
-                href={`/${role}/users/user-sessions`}
+                href={`/${role}/users/user&sessions`}
                 className={`flex items-center gap-3 px-14 py-2 text-gray-600 hover:bg-gray-100 transition-colors ${
-                  pathname.includes('/users/user-sessions') ? 'text-gray-900 font-medium' : ''
+                  pathname.includes('/users/user&sessions') ? 'text-gray-900 font-medium' : ''
                 }`}
               >
                 <span className="text-xs">•</span>
-                <span className="text-sm">User Sessions</span>
+                <span className="text-sm">User & Sessions</span>
               </Link>
             </div>
           )}

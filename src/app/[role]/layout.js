@@ -1,6 +1,7 @@
 'use client';
 import { use, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Navbar from '@/Components/Navbar';
 import Sidebar from '@/Components/Sidebar';
 import UserSidebar from '@/Components/UserSidebar';
 import ProtectedRoute from '@/Components/ProtectedRoute';
@@ -74,34 +75,40 @@ export default function DynamicRoleLayout({ children, params }) {
     <ProtectedRoute allowedRoles={getAllowedRoles(role)}>
       {isUserRole ? (
         // User Layout Style
-        <div className="flex h-screen bg-gray-50">
-          {renderSidebar()}
-          <div className="flex-1 flex flex-col overflow-hidden">
-            <main className="flex-1 overflow-y-auto">
-              {children}
-            </main>
-            <footer className="bg-white border-t border-gray-200 px-6 py-3">
-              <p className="text-sm text-gray-600 text-right">
-                © 2025 Tech Solutionor. All rights reserved.
-              </p>
-            </footer>
+        <div className="flex flex-col h-screen bg-gray-50">
+          <Navbar />
+          <div className="flex flex-1 overflow-hidden">
+            {renderSidebar()}
+            <div className="flex-1 flex flex-col overflow-hidden">
+              <main className="flex-1 overflow-y-auto">
+                {children}
+              </main>
+              <footer className="bg-white border-t border-gray-200 px-6 py-3">
+                <p className="text-sm text-gray-600 text-right">
+                  © 2025 Tech Solutionor. All rights reserved.
+                </p>
+              </footer>
+            </div>
           </div>
         </div>
       ) : (
         // Admin/SuperAdmin Layout Style
-        <div className="flex min-h-screen bg-gray-50">
-          {renderSidebar()}
-          <main className="flex-1 flex flex-col">
-            <div className="flex-1">
-              {children}
-            </div>
-            {/* Footer */}
-            <div className="py-4 px-8 bg-gray-50">
-              <p className="text-xs text-gray-500">
-                © 2025 , made with ❤️ by <span className="font-semibold text-gray-700">TechSolutionor</span>
-              </p>
-            </div>
-          </main>
+        <div className="flex flex-col min-h-screen bg-gray-50">
+          <Navbar />
+          <div className="flex flex-1">
+            {renderSidebar()}
+            <main className="flex-1 flex flex-col">
+              <div className="flex-1">
+                {children}
+              </div>
+              {/* Footer */}
+              <div className="py-4 px-8 bg-gray-50">
+                <p className="text-xs text-gray-500">
+                  © 2025 , made with ❤️ by <span className="font-semibold text-gray-700">TechSolutionor</span>
+                </p>
+              </div>
+            </main>
+          </div>
         </div>
       )}
     </ProtectedRoute>

@@ -1,8 +1,6 @@
 'use client';
 import Link from 'next/link';
-import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import MainLogo from '@/Components/images/logo_main.jpg';
 import { FaUser, FaSignOutAlt } from 'react-icons/fa';
 import { MdDashboard } from 'react-icons/md';
 import { HiDocumentText } from 'react-icons/hi';
@@ -14,17 +12,6 @@ export default function UserSidebar({ username = 'user19', counter = '2' }) {
 
   return (
     <aside className="w-64 bg-white border-r border-gray-200 h-screen sticky top-0 flex flex-col overflow-y-auto">
-      {/* Logo */}
-      <Link href="/user" className="border-b border-gray-200 flex items-center justify-center py-4">
-        <Image 
-          src={MainLogo} 
-          alt="Tech Solutionor Logo" 
-          width={200} 
-          height={45}
-          className="h-auto object-contain"
-        />
-      </Link>
-
       {/* User Info */}
       <div className="px-4 py-6 border-b border-gray-200">
         <p className="text-sm text-gray-600 mb-2">

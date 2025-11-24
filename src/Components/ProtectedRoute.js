@@ -8,34 +8,46 @@ export default function ProtectedRoute({ children, allowedRoles = [] }) {
   const router = useRouter();
   const { isAuthenticated, user } = useAuth();
   const [isChecking, setIsChecking] = useState(true);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const checkAuth = () => {
-      // Check authentication
-      if (!isAuthenticated) {
-        router.push('/login');
-        return;
-      }
+    setMounted(true);
+  }, []);
 
-      // Check role-based access
-      if (allowedRoles.length > 0 && user) {
-        const hasAccess = allowedRoles.includes(user.role);
-        
-        if (!hasAccess) {
-          // Don't redirect - just show access denied
-          setIsChecking(false);
+  useEffect(() => {
+    if (!mounted) return;
+
+    // Small delay to allow Redux to restore from localStorage
+    const timer = setTimeout(() => {
+      const checkAuth = () => {
+        // Check authentication
+        if (!isAuthenticated) {
+          router.push('/login');
           return;
         }
-      }
 
-      setIsChecking(false);
-    };
+        // Check role-based access
+        if (allowedRoles.length > 0 && user) {
+          const hasAccess = allowedRoles.includes(user.role);
+          
+          if (!hasAccess) {
+            // Don't redirect - just show access denied
+            setIsChecking(false);
+            return;
+          }
+        }
 
-    checkAuth();
-  }, [isAuthenticated, user, allowedRoles, router]);
+        setIsChecking(false);
+      };
 
-  // Show loading while checking auth
-  if (isChecking || !isAuthenticated) {
+      checkAuth();
+    }, 100); // Small delay to ensure Redux state is hydrated
+
+    return () => clearTimeout(timer);
+  }, [isAuthenticated, user, allowedRoles, router, mounted]);
+
+  // Show loading only on initial mount
+  if (!mounted || (isChecking && !user)) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -44,6 +56,11 @@ export default function ProtectedRoute({ children, allowedRoles = [] }) {
         </div>
       </div>
     );
+  }
+
+  // Don't show loading if we already have user data (prevents flash on refresh)
+  if (!isAuthenticated) {
+    return null; // Will redirect to login
   }
 
   // Check role access
