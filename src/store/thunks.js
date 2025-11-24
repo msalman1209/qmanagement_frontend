@@ -378,6 +378,21 @@ export const deleteAdmin = createAsyncThunk(
   }
 )
 
+export const updateOwnProfile = createAsyncThunk(
+  'auth/updateProfile',
+  async (profileData, { rejectWithValue }) => {
+    try {
+      const data = await apiCall('/admin/profile', {
+        method: 'PUT',
+        body: JSON.stringify(profileData),
+      })
+      return data.user || data
+    } catch (error) {
+      return rejectWithValue(error.message)
+    }
+  }
+)
+
 // Configuration Thunks
 export const fetchConfiguration = createAsyncThunk(
   'config/fetch',
@@ -450,6 +465,7 @@ export default {
   loginUser,
   logoutUser,
   getCurrentUser,
+  updateOwnProfile,
   
   // Tickets
   fetchAllTickets,
