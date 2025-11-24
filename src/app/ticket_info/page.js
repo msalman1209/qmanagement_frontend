@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
+import ProtectedRoute from '@/Components/ProtectedRoute';
 
 export default function TicketInfo() {
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -25,7 +26,8 @@ export default function TicketInfo() {
   ];
 
   return (
-    <div className="flex flex-row h-screen w-full bg-white text-white font-sans overflow-hidden">
+    <ProtectedRoute>
+      <div className="flex flex-row h-screen w-full bg-white text-white font-sans overflow-hidden">
       {/* Left Panel: Counter Table */}
       <div className="flex-[0_0_30%] bg-green-700 flex flex-col border-r-[3px] border-[#fdbb2d] overflow-hidden">
         <table className="w-full border-collapse">
@@ -117,5 +119,6 @@ export default function TicketInfo() {
         }
       `}</style>
     </div>
+    </ProtectedRoute>
   );
 }

@@ -1,5 +1,20 @@
 import { createSlice } from '@reduxjs/toolkit'
 
+// Helper functions for cookies
+const setCookie = (name, value, days = 7) => {
+  if (typeof window !== 'undefined') {
+    const expires = new Date()
+    expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000)
+    document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/`
+  }
+}
+
+const deleteCookie = (name) => {
+  if (typeof window !== 'undefined') {
+    document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/`
+  }
+}
+
 const initialState = {
   user: null,
   token: null,
@@ -23,6 +38,11 @@ const authSlice = createSlice({
       if (typeof window !== 'undefined') {
         localStorage.setItem('token', token)
         localStorage.setItem('user', JSON.stringify(user))
+        
+        // Set cookies for middleware
+        setCookie('isAuthenticated', 'true', 7)
+        setCookie('userRole', user.role, 7)
+        setCookie('token', token, 7)
       }
     },
     
@@ -36,6 +56,11 @@ const authSlice = createSlice({
       if (typeof window !== 'undefined') {
         localStorage.removeItem('token')
         localStorage.removeItem('user')
+        
+        // Clear cookies
+        deleteCookie('isAuthenticated')
+        deleteCookie('userRole')
+        deleteCookie('token')
       }
     },
     
@@ -67,6 +92,11 @@ const authSlice = createSlice({
         state.user = user
         state.token = token
         state.isAuthenticated = true
+        
+        // Ensure cookies are set
+        setCookie('isAuthenticated', 'true', 7)
+        setCookie('userRole', user.role, 7)
+        setCookie('token', token, 7)
       }
     },
   },

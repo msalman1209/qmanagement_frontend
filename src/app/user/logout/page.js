@@ -1,17 +1,41 @@
 'use client';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import { useAppDispatch } from '@/store/hooks';
+import { logout } from '@/store';
 
 export default function UserLogout() {
   const router = useRouter();
+  const dispatch = useAppDispatch();
 
   useEffect(() => {
-    // Perform logout logic here
-    // Clear session, tokens, etc.
-    setTimeout(() => {
-      router.push('/');
-    }, 2000);
-  }, [router]);
+    const performLogout = async () => {
+      try {
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+        const token = localStorage.getItem('token');
+        
+        // Call backend logout
+        if (token) {
+          await fetch(`${API_URL}/auth/logout`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+            },
+          });
+        }
+      } catch (err) {
+        console.error('Logout error:', err);
+      } finally {
+        // Clear Redux state and localStorage
+        dispatch(logout());
+        setTimeout(() => {
+          router.push('/login');
+        }, 1000);
+      }
+    };
+    
+    performLogout();
+  }, [router, dispatch]);
 
   return (
     <div className="flex items-center justify-center h-full">
