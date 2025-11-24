@@ -48,7 +48,7 @@ export default function UserSidebar({ username = 'user19', counter = '2' }) {
           href="/user/dashboard"
           className={`flex items-center gap-3 px-4 py-2.5 transition-colors ${
             isActive('/user/dashboard') 
-              ? 'bg-indigo-50 text-indigo-600 border-r-4 border-indigo-600' 
+              ? 'bg-green-50 text-green-600 border-r-4 border-green-600' 
               : 'text-gray-600 hover:bg-gray-50'
           }`}
         >
@@ -61,7 +61,7 @@ export default function UserSidebar({ username = 'user19', counter = '2' }) {
           href="/user/completed-tasks"
           className={`flex items-center gap-3 px-4 py-2.5 transition-colors ${
             isActive('/user/completed-tasks') 
-              ? 'bg-indigo-50 text-indigo-600 border-r-4 border-indigo-600' 
+              ? 'bg-green-50 text-green-600 border-r-4 border-green-600' 
               : 'text-gray-600 hover:bg-gray-50'
           }`}
         >
@@ -74,7 +74,7 @@ export default function UserSidebar({ username = 'user19', counter = '2' }) {
           href="/user/profile"
           className={`flex items-center gap-3 px-4 py-2.5 transition-colors ${
             isActive('/user/profile') 
-              ? 'bg-indigo-50 text-indigo-600 border-r-4 border-indigo-600' 
+              ? 'bg-green-50 text-green-600 border-r-4 border-green-600' 
               : 'text-gray-600 hover:bg-gray-50'
           }`}
         >
@@ -87,7 +87,7 @@ export default function UserSidebar({ username = 'user19', counter = '2' }) {
           href="/user/logout"
           className={`flex items-center gap-3 px-4 py-2.5 transition-colors ${
             isActive('/user/logout') 
-              ? 'bg-indigo-50 text-indigo-600 border-r-4 border-indigo-600' 
+              ? 'bg-green-50 text-green-600 border-r-4 border-green-600' 
               : 'text-gray-600 hover:bg-gray-50'
           }`}
         >

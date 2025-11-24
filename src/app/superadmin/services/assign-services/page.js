@@ -80,7 +80,7 @@ export default function AssignServicesPage() {
                   <td className="px-6 py-4 text-sm">
                     <button
                       onClick={() => handleDeleteAll(item.username)}
-                      className="px-4 py-1.5 bg-red-500 text-white text-xs rounded hover:bg-red-600 transition-colors"
+                      className="px-4 py-1.5 bg-green-500 text-white text-xs rounded hover:bg-green-600 transition-colors"
                     >
                       Delete All
                     </button>
@@ -107,7 +107,7 @@ export default function AssignServicesPage() {
             <select
               value={selectedUser}
               onChange={(e) => setSelectedUser(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none text-gray-700"
+              className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none text-gray-700"
             >
               <option value="">Select User</option>
               <option value="user18">user18</option>
@@ -130,7 +130,7 @@ export default function AssignServicesPage() {
                   id="select-all"
                   checked={selectedServices.length === availableServices.length}
                   onChange={handleSelectAll}
-                  className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                  className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
                 />
                 <label htmlFor="select-all" className="ml-2 text-sm text-gray-700">
                   Select All
@@ -145,7 +145,7 @@ export default function AssignServicesPage() {
                     id={`service-${index}`}
                     checked={selectedServices.includes(service)}
                     onChange={() => handleServiceToggle(service)}
-                    className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                    className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
                   />
                   <label htmlFor={`service-${index}`} className="ml-2 text-sm text-gray-700">
                     {service}
@@ -159,7 +159,7 @@ export default function AssignServicesPage() {
           <div>
             <button
               onClick={handleAssignServices}
-              className="px-6 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 font-medium transition-colors"
+              className="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700 font-medium transition-colors"
             >
               Assign Services
             </button>

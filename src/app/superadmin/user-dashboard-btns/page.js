@@ -22,7 +22,7 @@ export default function UserDashboardBtnsPage() {
               id="show-next"
               checked={showNextButton}
               onChange={(e) => setShowNextButton(e.target.checked)}
-              className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+              className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
             />
             <label htmlFor="show-next" className="text-sm font-medium text-gray-600 uppercase">
               Show "Next" Button
@@ -36,7 +36,7 @@ export default function UserDashboardBtnsPage() {
               id="show-transfer"
               checked={showTransferButton}
               onChange={(e) => setShowTransferButton(e.target.checked)}
-              className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+              className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
             />
             <label htmlFor="show-transfer" className="text-sm font-medium text-gray-600 uppercase">
               Show "Transfer" Button
@@ -47,7 +47,7 @@ export default function UserDashboardBtnsPage() {
           <div className="pt-4">
             <button
               onClick={handleUpdateSettings}
-              className="px-8 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium transition-colors"
+              className="px-8 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition-colors"
             >
               Update Button Settings
             </button>

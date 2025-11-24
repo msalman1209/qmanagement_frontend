@@ -23,7 +23,7 @@ export default function ConfigurationPage() {
             <select
               value={preferredVoice}
               onChange={(e) => setPreferredVoice(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none text-gray-700"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none text-gray-700"
             >
               <option value="Male">Male</option>
               <option value="Female">Female</option>
@@ -38,7 +38,7 @@ export default function ConfigurationPage() {
             <select
               value={preferredLanguage}
               onChange={(e) => setPreferredLanguage(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none text-gray-700"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none text-gray-700"
             >
               <option value="English (US)">English (US)</option>
               <option value="Arabic">Arabic</option>
@@ -50,7 +50,7 @@ export default function ConfigurationPage() {
           <div className="pt-4">
             <button
               onClick={handleUpdateSettings}
-              className="px-8 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium transition-colors"
+              className="px-8 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition-colors"
             >
               Update Notification Settings
             </button>

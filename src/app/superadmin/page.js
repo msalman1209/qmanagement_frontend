@@ -117,7 +117,7 @@ export default function SuperAdminPage() {
           />
         </div>
 
-        <button className="px-6 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 flex items-center gap-2">
+        <button className="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-2">
           <FaSearch />
           Filter
         </button>
@@ -168,7 +168,7 @@ export default function SuperAdminPage() {
                 <tr key={index} className="hover:bg-gray-50">
                   <td className="px-3 py-3 text-sm text-gray-900 whitespace-nowrap">{service.t}</td>
                   <td className="px-3 py-3 text-sm text-gray-900 whitespace-nowrap">{service.c}</td>
-                  <td className="px-3 py-3 text-sm text-blue-600 whitespace-nowrap">{service.serviceName}</td>
+                  <td className="px-3 py-3 text-sm text-green-600 whitespace-nowrap">{service.serviceName}</td>
                   <td className="px-3 py-3 text-sm text-gray-900 whitespace-nowrap">{service.name}</td>
                   <td className="px-3 py-3 text-sm text-gray-900 whitespace-nowrap">{service.email}</td>
                   <td className="px-3 py-3 text-sm text-gray-900 whitespace-nowrap">{service.representative}</td>
@@ -181,7 +181,7 @@ export default function SuperAdminPage() {
                   <td className="px-3 py-3 text-sm text-gray-900 whitespace-nowrap">{service.callingTime}</td>
                   <td className="px-3 py-3 text-sm text-gray-900 whitespace-nowrap">{service.callingUserTime}</td>
                   <td className="px-3 py-3 text-sm whitespace-nowrap">
-                    <span className="text-blue-600">{service.status}</span>
+                    <span className="text-green-600">{service.status}</span>
                   </td>
                   <td className="px-3 py-3 text-sm text-gray-900 whitespace-nowrap">{service.statusTime}</td>
                   <td className="px-3 py-3 text-sm text-gray-900 whitespace-nowrap">{service.reason}</td>
@@ -193,10 +193,10 @@ export default function SuperAdminPage() {
         </div>
       </div>
 
-      {/* Footer */}
+      {/* Footer
       <div className="mt-8 text-center text-gray-500 text-sm">
         © 2025 , made with ❤️ by <span className="font-semibold text-gray-700">TechSolutionor</span>
-      </div>
+      </div> */}
     </div>
   );
 }

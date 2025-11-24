@@ -49,17 +49,17 @@ export default function ShortReportsPage() {
           type="date"
           value={startDate}
           onChange={(e) => setStartDate(e.target.value)}
-          className="px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+          className="px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
         />
         <input
           type="date"
           value={endDate}
           onChange={(e) => setEndDate(e.target.value)}
-          className="px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+          className="px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
         />
         <button
           onClick={handleFilter}
-          className="px-6 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 font-medium transition-colors"
+          className="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700 font-medium transition-colors"
         >
           Filter
         </button>
@@ -106,7 +106,7 @@ export default function ShortReportsPage() {
               {reportData.map((report, index) => (
                 <tr key={index} className="hover:bg-gray-50">
                   <td className="px-6 py-4 text-sm">
-                    <span className="px-3 py-1 bg-blue-500 text-white rounded font-medium">
+                    <span className="px-3 py-1 bg-green-500 text-white rounded font-medium">
                       {report.user}
                     </span>
                   </td>

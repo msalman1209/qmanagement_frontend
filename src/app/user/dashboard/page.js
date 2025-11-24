@@ -50,7 +50,7 @@ export default function UserDashboard() {
           <div className="w-45 rounded-lg">
             <button
               onClick={loadMoreTickets}
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-lg text-base font-medium transition-colors mb-3"
+              className="w-full bg-green-600 hover:bg-green-700 text-white px-6 py-2.5 rounded-lg text-base font-medium transition-colors mb-3"
             >
               Load More Tickets
             </button>
@@ -94,7 +94,7 @@ export default function UserDashboard() {
           </button>
           <button
             onClick={handleAccept}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white px-10 py-3 rounded-lg text-lg font-medium transition-colors"
+            className="bg-green-600 hover:bg-green-700 text-white px-10 py-3 rounded-lg text-lg font-medium transition-colors"
           >
             Accept
           </button>
@@ -107,11 +107,11 @@ export default function UserDashboard() {
             value={manualTicketId}
             onChange={(e) => setManualTicketId(e.target.value)}
             placeholder="Enter Manual Ticket ID"
-            className="px-5 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent w-72 bg-white text-base"
+            className="px-5 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent w-72 bg-white text-base"
           />
           <button
             onClick={handleSelectManual}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white px-10 py-3 rounded-lg text-base font-medium transition-colors"
+            className="bg-green-600 hover:bg-green-700 text-white px-10 py-3 rounded-lg text-base font-medium transition-colors"
           >
             Select
           </button>
@@ -169,7 +169,7 @@ export default function UserDashboard() {
           <div className="px-6 py-4 border-t border-gray-200">
             <button
               onClick={() => setVisibleTickets(visibleTickets + 5)}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+              className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
             >
               Show More
             </button>

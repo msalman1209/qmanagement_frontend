@@ -63,7 +63,7 @@ export default function CreateServicesPage() {
                 type="text"
                 value={serviceNameEnglish}
                 onChange={(e) => setServiceNameEnglish(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
               />
             </div>
 
@@ -76,7 +76,7 @@ export default function CreateServicesPage() {
                 type="text"
                 value={serviceNameArabic}
                 onChange={(e) => setServiceNameArabic(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
               />
             </div>
 
@@ -89,7 +89,7 @@ export default function CreateServicesPage() {
                 type="text"
                 value={initialTicket}
                 onChange={(e) => setInitialTicket(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
               />
             </div>
 
@@ -128,7 +128,7 @@ export default function CreateServicesPage() {
               <select
                 value={mainService}
                 onChange={(e) => setMainService(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
               >
                 <option value="">Select Main Service (If applicable)</option>
                 <option value="general">General Services</option>
@@ -144,7 +144,7 @@ export default function CreateServicesPage() {
               <select
                 value={showSubServicePopup}
                 onChange={(e) => setShowSubServicePopup(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
               >
                 <option value="No">No</option>
                 <option value="Yes">Yes</option>
@@ -156,7 +156,7 @@ export default function CreateServicesPage() {
           <div className="mt-6">
             <button
               onClick={handleAddService}
-              className="px-6 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 font-medium transition-colors"
+              className="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700 font-medium transition-colors"
             >
               Add Service
             </button>
@@ -190,13 +190,13 @@ export default function CreateServicesPage() {
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => handleEdit(index)}
-                        className="px-3 py-1 bg-orange-500 text-white text-xs rounded hover:bg-orange-600 transition-colors"
+                        className="px-3 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600 transition-colors"
                       >
                         Edit
                       </button>
                       <button
                         onClick={() => handleDelete(index)}
-                        className="px-3 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600 transition-colors"
+                        className="px-3 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600 transition-colors"
                       >
                         Delete
                       </button>
@@ -228,7 +228,7 @@ export default function CreateServicesPage() {
                 type="time"
                 value={startTime}
                 onChange={(e) => setStartTime(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
               />
             </div>
 
@@ -241,7 +241,7 @@ export default function CreateServicesPage() {
                 type="time"
                 value={endTime}
                 onChange={(e) => setEndTime(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
               />
             </div>
           </div>
@@ -250,7 +250,7 @@ export default function CreateServicesPage() {
           <div className="mt-6">
             <button
               onClick={handleAddTimeRestriction}
-              className="px-6 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 font-medium transition-colors"
+              className="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700 font-medium transition-colors"
             >
               Add Time Restriction
             </button>

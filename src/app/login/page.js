@@ -28,8 +28,8 @@ export default function LoginPage() {
                 onClick={() => setActiveTab('user')}
                 className={`flex-1 py-3 px-4 text-center font-medium transition-colors ${
                   activeTab === 'user'
-                    ? 'bg-blue-600 text-white border-b-2 border-blue-600'
-                    : 'text-blue-900 hover:bg-blue-100'
+                    ? 'bg-green-600 text-white border-b-2 border-green-600'
+                    : 'text-green-900 hover:bg-green-100'
                 }`}
               >
                 User Login
@@ -38,8 +38,8 @@ export default function LoginPage() {
                 onClick={() => setActiveTab('admin')}
                 className={`flex-1 py-3 px-4 text-center font-medium transition-colors ${
                   activeTab === 'admin'
-                    ? 'bg-blue-600 text-white border-b-2 border-blue-600'
-                    : 'text-blue-900 hover:bg-blue-100'
+                    ? 'bg-green-600 text-white border-b-2 border-green-600'
+                    : 'text-green-900 hover:bg-green-100'
                 }`}
               >
                 Admin Login
@@ -61,7 +61,7 @@ export default function LoginPage() {
                       name="email"
                       placeholder="Enter your email or username"
                       required
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition"
                     />
                   </div>
 
@@ -76,7 +76,7 @@ export default function LoginPage() {
                         name="password"
                         placeholder="············"
                         required
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition pr-10"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition pr-10"
                       />
                       <button
                         type="button"
@@ -96,7 +96,7 @@ export default function LoginPage() {
                       id="counter"
                       name="counter"
                       required
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition"
                     >
                       <option value="" disabled>Select a counter</option>
                       {counters.map((counter) => (
@@ -111,7 +111,7 @@ export default function LoginPage() {
                     <input
                       type="checkbox"
                       id="remember-me"
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
                     />
                     <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
                       Remember Me
@@ -120,7 +120,7 @@ export default function LoginPage() {
 
                   <button
                     type="submit"
-                    className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                    className="w-full bg-green-600 text-white py-3 rounded-lg font-medium hover:bg-green-700 transition-colors"
                   >
                     Sign in
                   </button>
@@ -143,7 +143,7 @@ export default function LoginPage() {
                       name="email"
                       placeholder="Enter your email or username"
                       required
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition"
                     />
                   </div>
 
@@ -158,7 +158,7 @@ export default function LoginPage() {
                         name="password"
                         placeholder="············"
                         required
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition pr-10"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition pr-10"
                       />
                       <button
                         type="button"
@@ -174,7 +174,7 @@ export default function LoginPage() {
                     <input
                       type="checkbox"
                       id="admin-remember-me"
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
                     />
                     <label htmlFor="admin-remember-me" className="ml-2 block text-sm text-gray-700">
                       Remember Me
@@ -183,7 +183,7 @@ export default function LoginPage() {
 
                   <button
                     type="submit"
-                    className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                    className="w-full bg-green-600 text-white py-3 rounded-lg font-medium hover:bg-green-700 transition-colors"
                   >
                     Sign in
                   </button>

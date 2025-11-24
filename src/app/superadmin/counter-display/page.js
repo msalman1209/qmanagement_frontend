@@ -45,7 +45,7 @@ export default function CounterDisplayPage() {
               type="text"
               value={tickerContent}
               onChange={(e) => setTickerContent(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none text-gray-700"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none text-gray-700"
             />
           </div>
 
@@ -53,7 +53,7 @@ export default function CounterDisplayPage() {
           <div className="pt-4">
             <button
               onClick={handleUpdateContent}
-              className="px-8 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium transition-colors"
+              className="px-8 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition-colors"
             >
               Update Content
             </button>

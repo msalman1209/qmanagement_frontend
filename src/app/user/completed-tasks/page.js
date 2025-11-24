@@ -93,7 +93,7 @@ export default function CompletedTasks() {
       case 'Not Solved':
         return 'bg-red-500 text-white';
       case 'Unattendant':
-        return 'bg-blue-500 text-white';
+        return 'bg-green-500 text-white';
       default:
         return 'bg-gray-500 text-white';
     }
@@ -113,7 +113,7 @@ export default function CompletedTasks() {
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               />
             </div>
             <div className="flex items-center gap-3">
@@ -122,10 +122,10 @@ export default function CompletedTasks() {
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               />
             </div>
-            <button className="bg-blue-500 hover:bg-blue-600 text-white px-8 py-2 rounded-lg font-medium transition-colors">
+            <button className="bg-green-500 hover:bg-green-600 text-white px-8 py-2 rounded-lg font-medium transition-colors">
               Filter
             </button>
           </div>

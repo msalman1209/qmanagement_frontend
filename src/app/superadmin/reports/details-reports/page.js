@@ -112,7 +112,7 @@ export default function DetailsReportsPage() {
           />
         </div>
 
-        <button className="px-6 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 flex items-center gap-2">
+        <button className="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-2">
           <FaSearch />
           Filter
         </button>
@@ -123,7 +123,7 @@ export default function DetailsReportsPage() {
         <button className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 flex items-center gap-2">
           Select Columns <FaChevronDown />
         </button>
-        <button className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 flex items-center gap-2">
+        <button className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-2">
           <FaFileWord /> Download as Word
         </button>
         <button className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 flex items-center gap-2">
@@ -159,7 +159,7 @@ export default function DetailsReportsPage() {
                 <tr key={index} className="hover:bg-gray-50">
                   <td className="px-3 py-3 text-sm text-gray-900 whitespace-nowrap">{service.t}</td>
                   <td className="px-3 py-3 text-sm text-gray-900 whitespace-nowrap">{service.c}</td>
-                  <td className="px-3 py-3 text-sm text-blue-600 whitespace-nowrap">{service.serviceName}</td>
+                  <td className="px-3 py-3 text-sm text-green-600 whitespace-nowrap">{service.serviceName}</td>
                   <td className="px-3 py-3 text-sm text-gray-900 whitespace-nowrap">{service.createdAt}</td>
                   <td className="px-3 py-3 text-sm text-gray-900 whitespace-nowrap">{service.caller}</td>
                   <td className="px-3 py-3 text-sm text-gray-900 whitespace-nowrap">{service.callingTime}</td>
