@@ -55,32 +55,6 @@ export default function UserSidebar({ username = 'user19', counter = '2' }) {
           <HiDocumentText className="text-base" />
           <span className="text-sm font-normal">Completed Tasks</span>
         </Link>
-
-        {/* Profile - Dynamic Route Support */}
-        <Link
-          href="/user/profile"
-          className={`flex items-center gap-3 px-4 py-2.5 transition-colors ${
-            isActive('/user/profile') || pathname?.includes('/profile')
-              ? 'bg-green-50 text-green-600 border-r-4 border-green-600' 
-              : 'text-gray-600 hover:bg-gray-50'
-          }`}
-        >
-          <FaUser className="text-base" />
-          <span className="text-sm font-normal">Profile</span>
-        </Link>
-
-        {/* Logout */}
-        <Link
-          href="/user/logout"
-          className={`flex items-center gap-3 px-4 py-2.5 transition-colors ${
-            isActive('/user/logout') || pathname?.includes('/logout')
-              ? 'bg-green-50 text-green-600 border-r-4 border-green-600' 
-              : 'text-gray-600 hover:bg-gray-50'
-          }`}
-        >
-          <FaSignOutAlt className="text-base" />
-          <span className="text-sm font-normal">Logout</span>
-        </Link>
       </nav>
     </aside>
   );

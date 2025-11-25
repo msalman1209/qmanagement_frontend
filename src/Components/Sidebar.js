@@ -228,17 +228,6 @@ export default function Sidebar() {
           <FaTv className="text-lg" />
           <span className="text-sm font-medium">User Dashboard Btns</span>
         </Link>
-
-        {/* Logout */}
-        <Link
-          href={`/${role}/logout`}
-          className={`flex items-center gap-3 px-6 py-3 text-gray-600 hover:bg-gray-50 transition-colors ${
-            pathname.includes('/logout') ? 'bg-gray-50 text-gray-900 border-r-2 border-green-500' : ''
-          }`}
-        >
-          <FaSignOutAlt className="text-lg" />
-          <span className="text-sm font-medium">Logout</span>
-        </Link>
       </nav>
     </aside>
   );
