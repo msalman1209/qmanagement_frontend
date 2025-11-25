@@ -194,16 +194,6 @@ export default function Sidebar() {
                   <span className="text-sm">Create Admin</span>
                 </Link>
               )}
-              
-              <Link
-                href={`/${role}/users/create-user`}
-                className={`flex items-center gap-3 px-14 py-2 text-gray-600 hover:bg-gray-100 transition-colors ${
-                  pathname.includes('/users/create-user') ? 'text-gray-900 font-medium' : ''
-                }`}
-              >
-                <span className="text-xs">•</span>
-                <span className="text-sm">Create User</span>
-              </Link>
               <Link
                 href={`/${role}/users/user&sessions`}
                 className={`flex items-center gap-3 px-14 py-2 text-gray-600 hover:bg-gray-100 transition-colors ${

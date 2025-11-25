@@ -1,80 +1,352 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { FaEye, FaSignOutAlt } from 'react-icons/fa';
+import { FaEye, FaSignOutAlt, FaPlus, FaUser, FaEnvelope, FaLock, FaUserTag, FaTimes } from 'react-icons/fa';
+import axios from 'axios';
 
 export default function UserManagementPage() {
-  const [users, setUsers] = useState([
-    {
-      id: 9,
-      username: 'user18',
-      email: 'users@gmail.com',
-      password: 'user18',
-      status: 'active',
-      lastLogin: '2024-11-24 10:30 AM',
-      sessionExpiry: '2024-11-24 11:30 AM',
-      isLoggedIn: true
-    },
-    {
-      id: 25,
-      username: 'user19',
-      email: 'user19@gmail.com',
-      password: 'user19',
-      status: 'active',
-      lastLogin: '2024-11-24 09:15 AM',
-      sessionExpiry: '2024-11-24 10:15 AM',
-      isLoggedIn: false
-    }
-  ]);
-
+  const [users, setUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
   const [showViewModal, setShowViewModal] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [admins, setAdmins] = useState([]);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [userCount, setUserCount] = useState(0);
 
-  const handleEdit = (userId) => {
-    console.log('Edit user:', userId);
+  const [formData, setFormData] = useState({
+    username: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+    role: 'user',
+    userType: 'user',
+    status: 'active',
+    adminId: '',
+    permissions: {
+      canCreateTickets: true,
+      canViewReports: false,
+      canManageQueue: false,
+      canCallTickets: false
+    }
+  });
+
+  const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editSubmitting, setEditSubmitting] = useState(false);
+  const [editErrors, setEditErrors] = useState({});
+  const [editForm, setEditForm] = useState({
+    id: '',
+    username: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+    userType: 'user',
+    status: 'active',
+    adminId: '',
+    permissions: {
+      canCreateTickets: true,
+      canViewReports: false,
+      canManageQueue: false,
+      canCallTickets: false
+    }
+  });
+
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+  const getToken = () => (typeof window !== 'undefined' ? localStorage.getItem('token') : null);
+
+  const fetchUsers = async (adminId) => {
+    const token = getToken();
+    if (!token) return;
+    try {
+      const endpoint = adminId ? `${apiUrl}/admin/users?adminId=${adminId}` : `${apiUrl}/admin/users`;
+      console.debug('[Users][GET] ->', endpoint);
+      const res = await axios.get(endpoint, { headers: { Authorization: `Bearer ${token}` } });
+      const list = res.data.users || res.data;
+      if (Array.isArray(list)) {
+        setUsers(list);
+        setUserCount(list.length);
+      }
+    } catch (e) {
+      console.error('[Users][GET] error', e.response?.data || e.message);
+    }
   };
 
-  const handleToggleStatus = (userId) => {
-    setUsers(users.map(user => 
-      user.id === userId 
-        ? { ...user, status: user.status === 'active' ? 'inactive' : 'active' }
-        : user
-    ));
+  const fetchAdmins = async () => {
+    const token = getToken();
+    if (!token) return;
+    try {
+      const res = await axios.get(`${apiUrl}/admin/admins`, { headers: { Authorization: `Bearer ${token}` } });
+      if (res.data.success) {
+        const adminList = (res.data.admins || []).filter(a => a.role === 'admin');
+        setAdmins(adminList);
+        if (!formData.adminId && adminList.length > 0) {
+          setFormData(prev => ({ ...prev, adminId: String(adminList[0].id) }));
+          fetchUsers(String(adminList[0].id));
+        }
+      }
+    } catch (e) {
+      console.error('[Admins][GET] error', e.response?.data || e.message);
+    }
+  };
+
+  const init = async () => {
+    const token = getToken();
+    if (!token) return;
+    try {
+      const meRes = await axios.get(`${apiUrl}/auth/me`, { headers: { Authorization: `Bearer ${token}` } });
+      const me = meRes.data.user || meRes.data;
+      setCurrentUser(me);
+      if (me.role === 'admin') {
+        // Logged-in admin sees own users
+        fetchUsers();
+      } else if (me.role === 'super_admin') {
+        fetchAdmins();
+      }
+    } catch (e) {
+      console.error('[Auth][ME] error', e.response?.data || e.message);
+    }
+  };
+
+  useEffect(() => { init(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (currentUser?.role === 'super_admin' && formData.adminId) {
+      fetchUsers(formData.adminId);
+    }
+  }, [currentUser?.role, formData.adminId]);
+
+  useEffect(() => {
+    document.body.style.overflow = (showViewModal || showCreateModal) ? 'hidden' : 'unset';
+    return () => { document.body.style.overflow = 'unset'; };
+  }, [showViewModal, showCreateModal]);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    if (name === 'userType') {
+      if (value === 'receptionist') {
+        setFormData(prev => ({
+          ...prev,
+          userType: value,
+          permissions: {
+            canCreateTickets: true,
+            canViewReports: true,
+            canManageQueue: true,
+            canCallTickets: true
+          }
+        }));
+      } else {
+        setFormData(prev => ({
+          ...prev,
+          userType: value,
+          permissions: {
+            canCreateTickets: true,
+            canViewReports: false,
+            canManageQueue: false,
+            canCallTickets: false
+          }
+        }));
+      }
+    }
+    if (errors[name]) setErrors(prev => ({ ...prev, [name]: '' }));
+  };
+
+  const handlePermissionChange = (perm) => {
+    setFormData(prev => ({
+      ...prev,
+      permissions: { ...prev.permissions, [perm]: !prev.permissions[perm] }
+    }));
+  };
+
+  // Edit helpers
+  const handleEdit = (user) => {
+    setEditForm({
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      password: '',
+      confirmPassword: '',
+      userType: user.userType || 'user',
+      status: user.status,
+      adminId: user.admin_id ? String(user.admin_id) : '',
+      permissions: {
+        canCreateTickets: true,
+        canViewReports: false,
+        canManageQueue: false,
+        canCallTickets: false
+      }
+    });
+    setEditErrors({});
+    setShowEditModal(true);
+  };
+
+  const handleEditChange = (e) => {
+    const { name, value } = e.target;
+    setEditForm(prev => ({ ...prev, [name]: value }));
+    if (name === 'userType') {
+      if (value === 'receptionist') {
+        setEditForm(prev => ({
+          ...prev,
+          userType: value,
+          permissions: {
+            canCreateTickets: true,
+            canViewReports: true,
+            canManageQueue: true,
+            canCallTickets: true
+          }
+        }));
+      } else {
+        setEditForm(prev => ({
+          ...prev,
+          userType: value,
+          permissions: {
+            canCreateTickets: true,
+            canViewReports: false,
+            canManageQueue: false,
+            canCallTickets: false
+          }
+        }));
+      }
+    }
+    if (editErrors[name]) setEditErrors(prev => ({ ...prev, [name]: '' }));
+  };
+
+  const handleEditPermissionChange = (perm) => {
+    setEditForm(prev => ({
+      ...prev,
+      permissions: { ...prev.permissions, [perm]: !prev.permissions[perm] }
+    }));
+  };
+
+  const validateEditForm = () => {
+    const errs = {};
+    if (!editForm.username.trim()) errs.username = 'Username is required';
+    else if (editForm.username.length < 3) errs.username = 'Username must be at least 3 characters';
+    if (!editForm.email.trim()) errs.email = 'Email is required';
+    else if (!/\S+@\S+\.\S+/.test(editForm.email)) errs.email = 'Email is invalid';
+    if (editForm.password && editForm.password.length < 6) errs.password = 'Password must be at least 6 characters';
+    if (editForm.password && editForm.password !== editForm.confirmPassword) errs.confirmPassword = 'Passwords do not match';
+    if (currentUser?.role === 'super_admin' && !editForm.adminId) errs.adminId = 'Select an admin';
+    setEditErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
+
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    if (!validateEditForm()) return;
+    setEditSubmitting(true);
+    try {
+      const token = getToken();
+      const payload = { username: editForm.username, email: editForm.email, status: editForm.status };
+      if (editForm.password) payload.password = editForm.password;
+      if (currentUser?.role === 'super_admin' && editForm.adminId) payload.admin_id = Number(editForm.adminId);
+      const res = await axios.put(`${apiUrl}/admin/users/${editForm.id}`, payload, { headers: { Authorization: `Bearer ${token}` } });
+      alert(res.data?.message || 'User updated successfully');
+      // Refetch to get updated data
+      if (currentUser?.role === 'admin') fetchUsers(); else if (formData.adminId) fetchUsers(formData.adminId);
+      setShowEditModal(false);
+    } catch (e) {
+      console.error('[Users][EDIT] error', e.response?.data || e.message);
+      alert(e.response?.data?.message || 'Failed to update user');
+    } finally { setEditSubmitting(false); }
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+    if (!formData.username.trim()) newErrors.username = 'Username is required';
+    else if (formData.username.length < 3) newErrors.username = 'Username must be at least 3 characters';
+    if (!formData.email.trim()) newErrors.email = 'Email is required';
+    else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Email is invalid';
+    if (!formData.password) newErrors.password = 'Password is required';
+    else if (formData.password.length < 6) newErrors.password = 'Password must be at least 6 characters';
+    if (!formData.confirmPassword) newErrors.confirmPassword = 'Please confirm password';
+    else if (formData.password !== formData.confirmPassword) newErrors.confirmPassword = 'Passwords do not match';
+    if (currentUser?.role === 'super_admin' && !formData.adminId) newErrors.adminId = 'Select an admin';
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!validateForm()) return;
+    setIsSubmitting(true);
+    try {
+      const token = getToken();
+      const payload = {
+        username: formData.username,
+        email: formData.email,
+        password: formData.password,
+        admin_id: currentUser?.role === 'admin' ? currentUser.id : Number(formData.adminId),
+        status: formData.status,
+      };
+      console.debug('[Users][POST] payload', payload);
+      const res = await axios.post(`${apiUrl}/admin/users`, payload, { headers: { Authorization: `Bearer ${token}` } });
+      alert(res.data?.message || 'User created successfully');
+      if (currentUser?.role === 'admin') fetchUsers(); else if (formData.adminId) fetchUsers(formData.adminId);
+      setFormData(prev => ({
+        ...prev,
+        username: '', email: '', password: '', confirmPassword: '', status: 'active',
+        permissions: { canCreateTickets: true, canViewReports: false, canManageQueue: false, canCallTickets: false }
+      }));
+      setShowCreateModal(false);
+    } catch (e) {
+      console.error('[Users][POST] error', e.response?.data || e.message);
+      alert(e.response?.data?.message || 'Failed to create user');
+    } finally { setIsSubmitting(false); }
+  };
+
+  const handleToggleStatus = async (userId) => {
+    const user = users.find(u => u.id === userId);
+    if (!user) return;
+    const newStatus = user.status === 'active' ? 'inactive' : 'active';
+    try {
+      const token = getToken();
+      await axios.put(`${apiUrl}/admin/users/${userId}`, { status: newStatus }, { headers: { Authorization: `Bearer ${token}` } });
+      setUsers(prev => prev.map(u => u.id === userId ? { ...u, status: newStatus } : u));
+    } catch (e) {
+      console.error('[Users][STATUS] error', e.response?.data || e.message);
+      alert(e.response?.data?.message || 'Failed to update status');
+    }
   };
 
   const handleLogout = (userId) => {
     const user = users.find(u => u.id === userId);
-    if (window.confirm(`Are you sure you want to logout ${user?.username}?`)) {
-      console.log('Logout user:', userId);
-      // You can add API call here
+    if (user && confirm(`Logout ${user.username}?`)) {
+      console.debug('[Users][LOGOUT] userId', userId);
     }
   };
 
-  const handleView = (user) => {
-    setSelectedUser(user);
-    setShowViewModal(true);
-  };
-
-  useEffect(() => {
-    if (showViewModal) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
-    }
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
-  }, [showViewModal]);
+  const handleView = (user) => { setSelectedUser(user); setShowViewModal(true); };
 
   return (
     <div className="p-8">
-      <h1 className="text-2xl font-semibold text-gray-700 mb-6">User Management</h1>
-      
-      {/* Manage Users Table */}
+      <div className="mb-6 flex justify-between items-center">
+        <h1 className="text-2xl font-semibold text-gray-700 flex items-center gap-3">
+          User Management
+        </h1>
+        <div className="flex items-center gap-3">
+          {currentUser?.role === 'super_admin' && admins.length > 0 && (
+            <select
+              value={formData.adminId}
+              onChange={(e) => setFormData(prev => ({ ...prev, adminId: e.target.value }))}
+              className="px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {admins.map(a => <option key={a.id} value={a.id}>{a.username}</option>)}
+            </select>
+          )}
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="flex items-center gap-2 px-6 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 rounded-lg shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 hover:scale-105 active:scale-95 transition-all"
+          >
+            <FaPlus /> Create User
+          </button>
+        </div>
+      </div>
+
       <div className="bg-white rounded-lg shadow">
         <div className="p-6 border-b">
           <h2 className="text-lg font-semibold text-gray-700">Manage Users</h2>
         </div>
-        
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50 border-b">
@@ -88,60 +360,21 @@ export default function UserManagementPage() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {users.map((user) => (
+              {users.map(user => (
                 <tr key={user.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 text-sm text-gray-700">{user.id}</td>
                   <td className="px-6 py-4 text-sm text-gray-700">{user.username}</td>
                   <td className="px-6 py-4 text-sm text-gray-700">{user.email}</td>
-                  <td className="px-6 py-4 text-sm text-gray-700">{user.password}</td>
+                  <td className="px-6 py-4 text-sm text-gray-700">••••••</td>
                   <td className="px-6 py-4 text-sm">
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      user.status === 'active' 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-gray-100 text-gray-800'
-                    }`}>
-                      {user.status === 'active' ? 'Active' : 'Inactive'}
-                    </span>
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${user.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>{user.status === 'active' ? 'Active' : 'Inactive'}</span>
                   </td>
                   <td className="px-6 py-4 text-sm">
                     <div className="flex items-center gap-2">
-                      {/* View Button */}
-                      <button
-                        onClick={() => handleView(user)}
-                        className="p-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-                        title="View Details"
-                      >
-                        <FaEye />
-                      </button>
-
-                      {/* Edit Button */}
-                      <button
-                        onClick={() => handleEdit(user.id)}
-                        className="px-4 py-2 bg-orange-500 text-white text-sm rounded hover:bg-orange-600 transition-colors font-medium"
-                      >
-                        Edit
-                      </button>
-
-                      {/* Toggle Status Button */}
-                      <button
-                        onClick={() => handleToggleStatus(user.id)}
-                        className={`px-4 py-2 rounded font-medium transition-colors text-sm ${
-                          user.status === 'active'
-                            ? 'bg-gray-500 text-white hover:bg-gray-600'
-                            : 'bg-green-500 text-white hover:bg-green-600'
-                        }`}
-                      >
-                        {user.status === 'active' ? 'Inactive' : 'Active'}
-                      </button>
-
-                      {/* Logout Button */}
-                      <button
-                        onClick={() => handleLogout(user.id)}
-                        className="p-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
-                        title="Logout User"
-                      >
-                        <FaSignOutAlt />
-                      </button>
+                      <button onClick={() => handleView(user)} className="p-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors" title="View Details"><FaEye /></button>
+                      <button onClick={() => handleEdit(user)} className="px-4 py-2 bg-orange-500 text-white text-sm rounded hover:bg-orange-600 transition-colors font-medium">Edit</button>
+                      <button onClick={() => handleToggleStatus(user.id)} className={`px-4 py-2 rounded font-medium transition-colors text-sm ${user.status === 'active' ? 'bg-gray-500 text-white hover:bg-gray-600' : 'bg-green-500 text-white hover:bg-green-600'}`}>{user.status === 'active' ? 'Inactive' : 'Active'}</button>
+                      <button onClick={() => handleLogout(user.id)} className="p-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors" title="Logout User"><FaSignOutAlt /></button>
                     </div>
                   </td>
                 </tr>
@@ -151,99 +384,215 @@ export default function UserManagementPage() {
         </div>
       </div>
 
-      {/* View Modal */}
       {showViewModal && selectedUser && (
-        <div 
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-          onClick={() => setShowViewModal(false)}
-        >
-          <div 
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-md transform transition-all"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Modal Header */}
-            <div className="relative px-8 py-6 border-b border-gray-100">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                  <FaEye className="text-blue-600 text-lg" />
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowViewModal(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md" onClick={e => e.stopPropagation()}>
+            <div className="relative px-8 py-6 border-b border-gray-100 flex items-center gap-3">
+              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center"><FaEye className="text-blue-600 text-lg" /></div>
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">User Details</h2>
+                <p className="text-sm text-gray-500 mt-0.5">View user information</p>
+              </div>
+              <button onClick={() => setShowViewModal(false)} className="absolute top-6 right-6 w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+            <div className="px-8 py-6 space-y-4">
+              <DetailRow label="ID" value={selectedUser.id} />
+              <DetailRow label="Username" value={selectedUser.username} />
+              <DetailRow label="Email" value={selectedUser.email} />
+              <DetailRow label="Password" value="••••••" />
+              <DetailRow label="Login Status" value={selectedUser.isLoggedIn ? 'Logged In' : 'Logged Out'} badge={selectedUser.isLoggedIn ? 'blue' : 'gray'} />
+              <DetailRow label="Last Login" value={selectedUser.lastLogin || 'Never'} />
+              <DetailRow label="Session Expiry" value={selectedUser.sessionExpiry || 'N/A'} />
+              <DetailRow label="Account Status" value={selectedUser.status === 'active' ? 'Active' : 'Inactive'} badge={selectedUser.status === 'active' ? 'green' : 'gray'} />
+            </div>
+            {/* <div className="px-8 py-4 border-t border-gray-100 flex justify-end">
+              <button onClick={() => setShowViewModal(false)} className="px-6 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 rounded-xl transition-all shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 hover:scale-105 active:scale-95">Close</button>
+            </div> */}
+          </div>
+        </div>
+      )}
+
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => { setShowCreateModal(false); }}>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="sticky top-0 bg-white px-8 py-6 border-b border-gray-100 flex justify-between items-center rounded-t-2xl">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">Create New User</h2>
+                <p className="text-sm text-gray-500 mt-0.5">Add a new user to the system</p>
+              </div>
+              <button onClick={() => setShowCreateModal(false)} className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all"><FaTimes size={20} /></button>
+            </div>
+            <form onSubmit={handleSubmit} className="p-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormInput label="Username" name="username" value={formData.username} onChange={handleChange} icon={<FaUser />} error={errors.username} required />
+                <FormInput label="Email" name="email" type="email" value={formData.email} onChange={handleChange} icon={<FaEnvelope />} error={errors.email} required />
+                <FormInput label="Password" name="password" type="password" value={formData.password} onChange={handleChange} icon={<FaLock />} error={errors.password} required />
+                <FormInput label="Confirm Password" name="confirmPassword" type="password" value={formData.confirmPassword} onChange={handleChange} icon={<FaLock />} error={errors.confirmPassword} required />
+                {currentUser?.role === 'super_admin' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Select Admin <span className="text-red-500">*</span></label>
+                    <select name="adminId" value={formData.adminId} onChange={handleChange} className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${errors.adminId ? 'border-red-500' : 'border-gray-300'}`}>
+                      <option value="">Choose an admin...</option>
+                      {admins.map(a => <option key={a.id} value={a.id}>{a.username} ({a.email})</option>)}
+                    </select>
+                    {errors.adminId && <p className="mt-1 text-sm text-red-500">{errors.adminId}</p>}
+                  </div>
+                )}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">User Type</label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><FaUserTag className="text-gray-400" /></div>
+                    <select name="userType" value={formData.userType} onChange={handleChange} className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                      <option value="user">Regular User</option>
+                      <option value="receptionist">Receptionist</option>
+                    </select>
+                  </div>
+                  <p className="mt-1 text-xs text-gray-500">{formData.userType === 'receptionist' ? 'Full access to queue management' : 'Basic user access'}</p>
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900">User Details</h2>
-                  <p className="text-sm text-gray-500 mt-0.5">View user information</p>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Status</label>
+                  <select name="status" value={formData.status} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
                 </div>
               </div>
-              <button
-                onClick={() => setShowViewModal(false)}
-                className="absolute top-6 right-6 w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            {/* Modal Body */}
-            <div className="px-8 py-6">
-              <div className="space-y-4">
-                <div className="flex justify-between items-center pb-3 border-b border-gray-100">
-                  <span className="text-sm font-medium text-gray-500">ID</span>
-                  <span className="text-sm font-semibold text-gray-900">{selectedUser.id}</span>
-                </div>
-                <div className="flex justify-between items-center pb-3 border-b border-gray-100">
-                  <span className="text-sm font-medium text-gray-500">Username</span>
-                  <span className="text-sm font-semibold text-gray-900">{selectedUser.username}</span>
-                </div>
-                <div className="flex justify-between items-center pb-3 border-b border-gray-100">
-                  <span className="text-sm font-medium text-gray-500">Email</span>
-                  <span className="text-sm font-semibold text-gray-900">{selectedUser.email}</span>
-                </div>
-                <div className="flex justify-between items-center pb-3 border-b border-gray-100">
-                  <span className="text-sm font-medium text-gray-500">Password</span>
-                  <span className="text-sm font-semibold text-gray-900">••••••</span>
-                </div>
-                <div className="flex justify-between items-center pb-3 border-b border-gray-100">
-                  <span className="text-sm font-medium text-gray-500">Login Status</span>
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                    selectedUser.isLoggedIn 
-                      ? 'bg-blue-100 text-blue-800' 
-                      : 'bg-gray-100 text-gray-800'
-                  }`}>
-                    {selectedUser.isLoggedIn ? 'Logged In' : 'Logged Out'}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center pb-3 border-b border-gray-100">
-                  <span className="text-sm font-medium text-gray-500">Last Login</span>
-                  <span className="text-sm font-semibold text-gray-900">{selectedUser.lastLogin || 'Never'}</span>
-                </div>
-                <div className="flex justify-between items-center pb-3 border-b border-gray-100">
-                  <span className="text-sm font-medium text-gray-500">Session Expiry</span>
-                  <span className="text-sm font-semibold text-gray-900">{selectedUser.sessionExpiry || 'N/A'}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-gray-500">Account Status</span>
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                    selectedUser.status === 'active' 
-                      ? 'bg-green-100 text-green-800' 
-                      : 'bg-gray-100 text-gray-800'
-                  }`}>
-                    {selectedUser.status === 'active' ? 'Active' : 'Inactive'}
-                  </span>
+              <div className="mt-6 pt-4 border-t border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-700 mb-3">User Permissions</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <PermissionCheckbox checked={formData.permissions.canCreateTickets} onChange={() => handlePermissionChange('canCreateTickets')} title="Create Tickets" description="Allow user to create new tickets" />
+                  <PermissionCheckbox checked={formData.permissions.canCallTickets} onChange={() => handlePermissionChange('canCallTickets')} title="Call Tickets" description="Allow user to call next ticket" />
+                  <PermissionCheckbox checked={formData.permissions.canManageQueue} onChange={() => handlePermissionChange('canManageQueue')} title="Manage Queue" description="Manage and organize ticket queue" />
+                  <PermissionCheckbox checked={formData.permissions.canViewReports} onChange={() => handlePermissionChange('canViewReports')} title="View Reports" description="Access reports and statistics" />
                 </div>
               </div>
+              <div className="flex items-center justify-end gap-4 mt-6 pt-4 border-t border-gray-200">
+                <button type="button" onClick={() => setShowCreateModal(false)} className="px-6 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">Cancel</button>
+                <button type="submit" disabled={isSubmitting} className={`px-6 py-2.5 text-sm font-semibold text-white rounded-lg transition-all ${isSubmitting ? 'bg-blue-400 cursor-not-allowed' : 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 hover:scale-105 active:scale-95'}`}>{isSubmitting ? 'Creating...' : 'Create User'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {showEditModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowEditModal(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="sticky top-0 bg-white px-8 py-6 border-b border-gray-100 flex justify-between items-center rounded-t-2xl">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">Edit User</h2>
+                <p className="text-sm text-gray-500 mt-0.5">Update user information</p>
+              </div>
+              <button onClick={() => setShowEditModal(false)} className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all"><FaTimes size={20} /></button>
             </div>
-
-            {/* Modal Footer */}
-            <div className="px-8 py-4 border-t border-gray-100 flex justify-end">
-              <button
-                onClick={() => setShowViewModal(false)}
-                className="px-6 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 rounded-xl transition-all shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 hover:scale-105 active:scale-95"
-              >
-                Close
-              </button>
-            </div>
+            <form onSubmit={handleEditSubmit} className="p-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormInput label="Username" name="username" value={editForm.username} onChange={handleEditChange} icon={<FaUser />} error={editErrors.username} required />
+                <FormInput label="Email" name="email" type="email" value={editForm.email} onChange={handleEditChange} icon={<FaEnvelope />} error={editErrors.email} required />
+                <FormInput label="Password" name="password" type="password" value={editForm.password} onChange={handleEditChange} icon={<FaLock />} error={editErrors.password} />
+                <FormInput label="Confirm Password" name="confirmPassword" type="password" value={editForm.confirmPassword} onChange={handleEditChange} icon={<FaLock />} error={editErrors.confirmPassword} />
+                {currentUser?.role === 'super_admin' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Select Admin <span className="text-red-500">*</span></label>
+                    <select name="adminId" value={editForm.adminId} onChange={handleEditChange} className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${editErrors.adminId ? 'border-red-500' : 'border-gray-300'}`}>
+                      <option value="">Choose an admin...</option>
+                      {admins.map(a => <option key={a.id} value={a.id}>{a.username} ({a.email})</option>)}
+                    </select>
+                    {editErrors.adminId && <p className="mt-1 text-sm text-red-500">{editErrors.adminId}</p>}
+                    <p className="mt-1 text-xs text-gray-500">This user will be assigned to the selected admin</p>
+                  </div>
+                )}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">User Type <span className="text-red-500">*</span></label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><FaUserTag className="text-gray-400" /></div>
+                    <select name="userType" value={editForm.userType} onChange={handleEditChange} className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                      <option value="user">Regular User</option>
+                      <option value="receptionist">Receptionist</option>
+                    </select>
+                  </div>
+                  <p className="mt-1 text-xs text-gray-500">{editForm.userType === 'receptionist' ? 'Full access to queue management' : 'Basic user access'}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Status <span className="text-red-500">*</span></label>
+                  <select name="status" value={editForm.status} onChange={handleEditChange} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                </div>
+              </div>
+              <div className="mt-6 pt-4 border-t border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-700 mb-3">User Permissions</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <PermissionCheckbox checked={editForm.permissions.canCreateTickets} onChange={() => handleEditPermissionChange('canCreateTickets')} title="Create Tickets" description="Allow user to create new tickets" />
+                  <PermissionCheckbox checked={editForm.permissions.canCallTickets} onChange={() => handleEditPermissionChange('canCallTickets')} title="Call Tickets" description="Allow user to call next ticket" />
+                  <PermissionCheckbox checked={editForm.permissions.canManageQueue} onChange={() => handleEditPermissionChange('canManageQueue')} title="Manage Queue" description="Manage and organize ticket queue" />
+                  <PermissionCheckbox checked={editForm.permissions.canViewReports} onChange={() => handleEditPermissionChange('canViewReports')} title="View Reports" description="Access reports and statistics" />
+                </div>
+              </div>
+              <div className="flex items-center justify-end gap-4 mt-6 pt-4 border-t border-gray-200">
+                <button type="button" onClick={() => setShowEditModal(false)} className="px-6 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">Cancel</button>
+                <button type="submit" disabled={editSubmitting} className={`px-6 py-2.5 text-sm font-semibold text-white rounded-lg transition-all ${editSubmitting ? 'bg-blue-400 cursor-not-allowed' : 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 hover:scale-105 active:scale-95'}`}>{editSubmitting ? (<span className="flex items-center gap-2"><svg className="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" /></svg>Updating...</span>) : 'Update User'}</button>
+              </div>
+            </form>
           </div>
         </div>
       )}
     </div>
+  );
+}
+
+function DetailRow({ label, value, badge }) {
+  const badgeClass = badge === 'green' ? 'bg-green-100 text-green-800' : badge === 'blue' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800';
+  return (
+    <div className="flex justify-between items-center pb-3 border-b border-gray-100">
+      <span className="text-sm font-medium text-gray-500">{label}</span>
+      {badge ? (
+        <span className={`px-3 py-1 rounded-full text-xs font-medium ${badgeClass}`}>{value}</span>
+      ) : (
+        <span className="text-sm font-semibold text-gray-900">{value}</span>
+      )}
+    </div>
+  );
+}
+
+function FormInput({ label, name, value, onChange, icon, type = 'text', error, required }) {
+  return (
+    <div>
+      <label htmlFor={name} className="block text-sm font-medium text-gray-700 mb-1.5">
+        {label} {required && <span className="text-red-500">*</span>}
+      </label>
+      <div className="relative">
+        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">{icon}</div>
+        <input
+          type={type}
+          id={name}
+          name={name}
+          value={value}
+          onChange={onChange}
+          className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${error ? 'border-red-500' : 'border-gray-300'}`}
+          placeholder={`Enter ${label.toLowerCase()}`}
+        />
+      </div>
+      {error && <p className="mt-1 text-sm text-red-500">{error}</p>}
+    </div>
+  );
+}
+
+function PermissionCheckbox({ checked, onChange, title, description }) {
+  return (
+    <label className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={onChange}
+        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+      />
+      <div>
+        <p className="text-sm font-medium text-gray-700">{title}</p>
+        <p className="text-xs text-gray-500">{description}</p>
+      </div>
+    </label>
   );
 }
