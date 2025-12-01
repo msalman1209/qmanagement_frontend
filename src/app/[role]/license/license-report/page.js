@@ -16,6 +16,9 @@ export default function LicenseReportPage() {
   const [showModal, setShowModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editFormData, setEditFormData] = useState({});
+  const [logoFile, setLogoFile] = useState(null);
+  const [logoPreview, setLogoPreview] = useState(null);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     fetchLicenseReport();
@@ -84,6 +87,7 @@ export default function LicenseReportPage() {
     if (license) {
       setEditFormData({
         id: license.id,
+        admin_id: license.admin_id,
         license_type: license.license_type,
         start_date: license.start_date?.split('T')[0],
         expiry_date: license.expiry_date?.split('T')[0],
@@ -91,11 +95,14 @@ export default function LicenseReportPage() {
         max_users: license.max_users || '',
         max_counters: license.max_counters || '',
         company_name: license.company_name,
+        company_logo: license.company_logo || '',
         email: license.email || '',
         phone: license.phone || '',
         city: license.city || '',
         country: license.country || ''
       });
+      setLogoFile(null);
+      setLogoPreview(null);
       setShowEditModal(true);
     }
   };
@@ -105,24 +112,65 @@ export default function LicenseReportPage() {
     setEditFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  const handleLogoChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        alert('Please select an image file');
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        alert('File size must be less than 5MB');
+        return;
+      }
+      setLogoFile(file);
+      
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setLogoPreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleEditSubmit = async (e) => {
     e.preventDefault();
+    setUploading(true);
     
     try {
       const authToken = token || (typeof window !== 'undefined' ? localStorage.getItem('token') : null);
+      
+      // Create FormData for file upload
+      const formData = new FormData();
+      
+      // Append all form fields
+      Object.keys(editFormData).forEach(key => {
+        if (editFormData[key] && key !== 'company_logo') {
+          formData.append(key, editFormData[key]);
+        }
+      });
+      
+      // Append logo file if selected
+      if (logoFile) {
+        formData.append('company_logo', logoFile);
+      }
+
       const response = await fetch(`http://localhost:5000/api/license/${editFormData.id}`, {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${authToken}`
+          // Don't set Content-Type - browser will set it with boundary for FormData
         },
-        body: JSON.stringify(editFormData)
+        body: formData
       });
 
       const data = await response.json();
       if (data.success) {
         alert('License updated successfully!');
         setShowEditModal(false);
+        setLogoFile(null);
+        setLogoPreview(null);
         fetchLicenseReport(); // Refresh data
       } else {
         alert(data.message || 'Failed to update license');
@@ -130,12 +178,16 @@ export default function LicenseReportPage() {
     } catch (error) {
       console.error('Update error:', error);
       alert('Failed to update license');
+    } finally {
+      setUploading(false);
     }
   };
 
   const closeEditModal = () => {
     setShowEditModal(false);
     setEditFormData({});
+    setLogoFile(null);
+    setLogoPreview(null);
   };
 
   const closeModal = () => {
@@ -260,6 +312,80 @@ export default function LicenseReportPage() {
                 </div>
               </div>
 
+              {/* Company Logo Upload */}
+              <div className="bg-purple-50 rounded-lg p-5">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                  <span>🖼️</span> Company Logo (For Tickets)
+                </h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Upload your company logo to display on printed tickets
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Current Logo */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Current Logo</label>
+                    <div className="border-2 border-gray-300 rounded-lg p-4 h-40 flex items-center justify-center bg-white">
+                      {editFormData.company_logo ? (
+                        <img 
+                          src={`http://localhost:5000${editFormData.company_logo}`}
+                          alt="Company Logo" 
+                          className="max-h-full max-w-full object-contain"
+                        />
+                      ) : (
+                        <div className="text-center">
+                          <p className="text-gray-400 text-3xl mb-2">📷</p>
+                          <p className="text-gray-500 text-sm">No logo uploaded</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Upload New Logo */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Upload New Logo</label>
+                    <div className="border-2 border-dashed border-indigo-300 rounded-lg p-4 h-40 flex flex-col items-center justify-center bg-white">
+                      {logoPreview ? (
+                        <img 
+                          src={logoPreview} 
+                          alt="Logo Preview" 
+                          className="max-h-full max-w-full object-contain"
+                        />
+                      ) : (
+                        <>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleLogoChange}
+                            className="hidden"
+                            id="logo-upload-edit"
+                          />
+                          <label 
+                            htmlFor="logo-upload-edit"
+                            className="cursor-pointer text-center"
+                          >
+                            <div className="text-indigo-400 text-3xl mb-2">⬆️</div>
+                            <p className="text-gray-600 text-sm">Click to select logo</p>
+                            <p className="text-gray-400 text-xs mt-1">Max 5MB</p>
+                          </label>
+                        </>
+                      )}
+                    </div>
+                    {logoFile && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setLogoFile(null);
+                          setLogoPreview(null);
+                        }}
+                        className="mt-2 w-full text-sm text-gray-600 hover:text-red-600 transition-colors"
+                      >
+                        ❌ Remove selected logo
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               {/* License Details */}
               <div className="bg-blue-50 rounded-lg p-5">
                 <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
@@ -343,18 +469,12 @@ export default function LicenseReportPage() {
 
               {/* Modal Footer */}
               <div className="flex justify-end gap-3 pt-4 border-t">
-                {/* <button
-                  type="button"
-                  onClick={closeEditModal}
-                  className="px-6 py-2.5 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium shadow-md hover:shadow-lg"
-                >
-                  Cancel
-                </button> */}
                 <button
                   type="submit"
-                  className="px-6 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium shadow-md hover:shadow-lg"
+                  disabled={uploading}
+                  className="px-6 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium shadow-md hover:shadow-lg disabled:bg-gray-400"
                 >
-                  💾 Save Changes
+                  {uploading ? '⏳ Saving...' : '💾 Save Changes'}
                 </button>
               </div>
             </form>

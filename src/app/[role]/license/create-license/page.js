@@ -30,6 +30,8 @@ export default function CreateLicensePage() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [logoFile, setLogoFile] = useState(null);
+  const [logoPreview, setLogoPreview] = useState(null);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -39,8 +41,31 @@ export default function CreateLicensePage() {
     }));
   };
 
+  const handleLogoChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        alert('Please select an image file');
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        alert('File size must be less than 5MB');
+        return;
+      }
+      setLogoFile(file);
+      
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setLogoPreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const generateLicenseKey = () => {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    // Use only A-F and 0-9 to match backend validation
+    const chars = 'ABCDEF0123456789';
     const segments = 4;
     const segmentLength = 4;
     let key = '';
@@ -70,13 +95,28 @@ export default function CreateLicensePage() {
     }
 
     try {
+      // Create FormData for file upload
+      const submitData = new FormData();
+      
+      // Append all form fields
+      Object.keys(formData).forEach(key => {
+        if (formData[key]) {
+          submitData.append(key, formData[key]);
+        }
+      });
+      
+      // Append logo file if selected
+      if (logoFile) {
+        submitData.append('company_logo', logoFile);
+      }
+
       const response = await fetch('http://localhost:5000/api/license/create', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${authToken}`
+          // Don't set Content-Type - browser will set it with boundary for FormData
         },
-        body: JSON.stringify(formData)
+        body: submitData
       });
 
       const data = await response.json();
@@ -111,102 +151,6 @@ export default function CreateLicensePage() {
       </div>
 
       <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-md p-6 space-y-6">
-        {/* License Key */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            License Key *
-          </label>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              name="license_key"
-              value={formData.license_key}
-              onChange={handleChange}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              placeholder="XXXX-XXXX-XXXX-XXXX"
-              required
-            />
-            <button
-              type="button"
-              onClick={generateLicenseKey}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Generate
-            </button>
-          </div>
-        </div>
-
-        {/* Admin Account Details */}
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-blue-900 mb-4 flex items-center gap-2">
-            <span>👤</span> Admin Login Credentials
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Admin Email (Login) *
-              </label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="admin@company.com"
-                required
-              />
-              <p className="text-xs text-gray-500 mt-1">Must be unique - Admin will use this to login</p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Admin Password *
-              </label>
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  name="admin_password"
-                  value={formData.admin_password}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Enter password"
-                  required
-                  minLength="6"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                >
-                  {showPassword ? '🙈' : '👁️'}
-                </button>
-              </div>
-              <p className="text-xs text-gray-500 mt-1">Minimum 6 characters</p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Admin Username (Display Name) *
-              </label>
-              <input
-                type="text"
-                name="admin_username"
-                value={formData.admin_username}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="e.g., John Doe"
-                required
-              />
-              <p className="text-xs text-gray-500 mt-1">Can be same as others - just for display</p>
-            </div>
-          </div>
-          <div className="mt-3 p-3 bg-blue-100 border border-blue-300 rounded-lg">
-            <p className="text-xs text-blue-800">
-              ℹ️ <strong>Note:</strong> Admin will login using <strong>Email</strong> and <strong>Password</strong>. Username is just for display.
-            </p>
-          </div>
-        </div>
-
         {/* Company Details */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
@@ -234,6 +178,35 @@ export default function CreateLicensePage() {
               onChange={handleChange}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
             />
+          </div>
+        </div>
+
+        {/* Company Logo Upload */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Company Logo (For Tickets)
+          </label>
+          <div className="flex items-start gap-4">
+            <div className="flex-1">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleLogoChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Upload company logo that will appear on tickets (Max 5MB, Image files only)
+              </p>
+            </div>
+            {logoPreview && (
+              <div className="w-24 h-24 border-2 border-gray-300 rounded-lg overflow-hidden">
+                <img 
+                  src={logoPreview} 
+                  alt="Logo Preview" 
+                  className="w-full h-full object-contain"
+                />
+              </div>
+            )}
           </div>
         </div>
 
@@ -346,6 +319,77 @@ export default function CreateLicensePage() {
           </div>
         </div>
 
+          {/* Admin Account Details */}
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-blue-900 mb-4 flex items-center gap-2">
+            <span>👤</span> Admin Login Credentials
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Admin Email (Login) *
+              </label>
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="admin@company.com"
+                required
+              />
+              <p className="text-xs text-gray-500 mt-1">Must be unique - Admin will use this to login</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Admin Password *
+              </label>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  name="admin_password"
+                  value={formData.admin_password}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Enter password"
+                  required
+                  minLength="6"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                >
+                  {showPassword ? '🙈' : '👁️'}
+                </button>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">Minimum 6 characters</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Admin Username (Display Name) *
+              </label>
+              <input
+                type="text"
+                name="admin_username"
+                value={formData.admin_username}
+                onChange={handleChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="e.g., John Doe"
+                required
+              />
+              <p className="text-xs text-gray-500 mt-1">Can be same as others - just for display</p>
+            </div>
+          </div>
+          <div className="mt-3 p-3 bg-blue-100 border border-blue-300 rounded-lg">
+            <p className="text-xs text-blue-800">
+              ℹ️ <strong>Note:</strong> Admin will login using <strong>Email</strong> and <strong>Password</strong>. Username is just for display.
+            </p>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -376,6 +420,30 @@ export default function CreateLicensePage() {
           </div>
         </div>
 
+ {/* License Key */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            License Key *
+          </label>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              name="license_key"
+              value={formData.license_key}
+              onChange={handleChange}
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              placeholder="XXXX-XXXX-XXXX-XXXX"
+              required
+            />
+            <button
+              type="button"
+              onClick={generateLicenseKey}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Generate
+            </button>
+          </div>
+        </div>
         {/* Submit Button */}
         <div className="flex gap-4 pt-4">
           <button

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth, useAppDispatch } from '@/store/hooks';
 import { setCredentials, setLoading, setError, clearError } from '@/store';
+import CounterSelectionModal from '@/Components/CounterSelectionModal';
 
 // Simple toast notification function
 const showToast = (message, type = 'error') => {
@@ -24,38 +25,40 @@ const showToast = (message, type = 'error') => {
 export default function LoginPage() {
   const router = useRouter();
   const dispatch = useAppDispatch();
-  const { isAuthenticated, loading, error } = useAuth();
+  const { isAuthenticated, user, loading, error } = useAuth();
   
   const [activeTab, setActiveTab] = useState('user');
   const [showPassword, setShowPassword] = useState(false);
   const [showAdminPassword, setShowAdminPassword] = useState(false);
+  const [showCounterModal, setShowCounterModal] = useState(false);
+  const [pendingUserData, setPendingUserData] = useState(null);
   
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-    counter_no: '1',
   });
-
-  const counters = Array.from({ length: 11 }, (_, i) => i + 1);
 
   // Redirect if already authenticated
   useEffect(() => {
-    if (isAuthenticated) {
-      const user = JSON.parse(localStorage.getItem('user') || '{}');
+    if (isAuthenticated && user && user.role) {
+      // Admin and super_admin go to their dashboards
       const roleMapping = {
-        'super_admin': 'superadmin',
-        'admin': 'admin',
-        'user': 'user'
+        'super_admin': '/superadmin',
+        'admin': '/admin',
+        'user': '/user/dashboard',  // User with counter goes to dashboard
+        'receptionist': '/',  // Receptionist goes to main page
       };
-      const mappedRole = roleMapping[user.role] || 'user';
-      router.push(`/${mappedRole}`);
+      const redirectPath = roleMapping[user.role];
+      if (redirectPath) {
+        router.push(redirectPath);
+      }
     }
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, user, router]);
 
   // Clear errors on tab switch
   useEffect(() => {
     dispatch(clearError());
-    setFormData({ email: '', password: '', counter_no: '1' });
+    setFormData({ email: '', password: '' });
   }, [activeTab, dispatch]);
 
   const handleInputChange = (e) => {
@@ -63,11 +66,82 @@ export default function LoginPage() {
       ...formData,
       [e.target.name]: e.target.value,
     });
+    // Clear errors on input change
+    if (error) {
+      dispatch(clearError());
+    }
+  };
+
+  const validateForm = () => {
+    if (!formData.email || !formData.password) {
+      const errorMsg = 'Please fill in all required fields';
+      dispatch(setError(errorMsg));
+      showToast(errorMsg, 'error');
+      return false;
+    }
+
+    if (formData.password.length < 3) {
+      const errorMsg = 'Password must be at least 3 characters';
+      dispatch(setError(errorMsg));
+      showToast(errorMsg, 'error');
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleCounterSelect = async (counterNo) => {
+    if (!pendingUserData) return;
+
+    dispatch(setLoading(true));
+    
+    try {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${API_URL}/auth/user/set-counter`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${pendingUserData.token}`
+        },
+        body: JSON.stringify({ counter_no: counterNo }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        showToast(data.message || 'Failed to assign counter', 'error');
+        dispatch(setLoading(false));
+        return;
+      }
+
+      // Store credentials with counter
+      dispatch(setCredentials({
+        user: { ...pendingUserData.user, counter_no: counterNo },
+        token: pendingUserData.token,
+      }));
+
+      showToast('Counter assigned successfully!', 'success');
+      setShowCounterModal(false);
+      setPendingUserData(null);
+      
+      // Let useEffect handle redirect
+    } catch (err) {
+      console.error('Counter assignment error:', err);
+      showToast('Failed to assign counter', 'error');
+    } finally {
+      dispatch(setLoading(false));
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     dispatch(clearError());
+
+    // Validate form
+    if (!validateForm()) {
+      return;
+    }
+
     dispatch(setLoading(true));
 
     try {
@@ -77,7 +151,7 @@ export default function LoginPage() {
       
       if (activeTab === 'user') {
         endpoint = `${API_URL}/auth/user/login`;
-        loginData.counter_no = formData.counter_no; // User needs counter
+        // User login without counter - will select counter in modal
       } else if (activeTab === 'admin') {
         // First try super admin login
         endpoint = `${API_URL}/auth/super-admin/login`;
@@ -105,13 +179,30 @@ export default function LoginPage() {
         const data = await response.json();
 
         if (!response.ok) {
-          const errorMsg = data.message || 'Invalid credentials';
+          let errorMsg = data.message || 'Invalid credentials';
+          
+          // Handle license specific errors
+          if (data.license_expired) {
+            if (data.no_license) {
+              errorMsg = '❌ No license assigned to your account.\n\n📧 Click "Contact Q Tech Support" link above to request a license.';
+            } else if (data.license_info) {
+              const license = data.license_info;
+              errorMsg = `❌ Your license has expired!\n\n` +
+                        `License Type: ${license.license_type}\n` +
+                        `Expired on: ${new Date(license.expiry_date).toLocaleDateString()}\n\n` +
+                        `📧 Click "Contact Q Tech Support" link above to renew your license.`;
+            } else {
+              errorMsg = '❌ Your license has expired or is invalid.\n\n📧 Click "Contact Q Tech Support" link above for assistance.';
+            }
+          }
+          
           dispatch(setError(errorMsg));
           showToast(errorMsg, 'error');
-          throw new Error(errorMsg);
+          dispatch(setLoading(false));
+          return;
         }
 
-        // Store credentials in Redux and localStorage
+        // Store credentials in Redux and sessionStorage
         dispatch(setCredentials({
           user: data.user,
           token: data.token,
@@ -120,17 +211,7 @@ export default function LoginPage() {
         // Show success message
         showToast('Login successful!', 'success');
 
-        // Redirect based on role
-        setTimeout(() => {
-          const roleMapping = {
-            'super_admin': 'superadmin',
-            'admin': 'admin',
-            'user': 'user'
-          };
-          const mappedRole = roleMapping[data.user.role] || 'admin';
-          router.push(`/${mappedRole}`);
-        }, 500);
-        
+        // Let useEffect handle redirect after state update
         dispatch(setLoading(false));
         return;
       }
@@ -146,13 +227,38 @@ export default function LoginPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        const errorMsg = data.message || 'Login failed';
+        let errorMsg = data.message || 'Login failed';
+        
+        // Handle license specific errors for users whose admin license expired
+        if (data.license_expired) {
+          if (data.admin_info) {
+            errorMsg = `❌ Admin license has expired!\n\n` +
+                      `Admin: ${data.admin_info.username}\n` +
+                      `Email: ${data.admin_info.email}\n\n` +
+                      `📧 Contact your admin or click "Contact Q Tech Support" above.`;
+          } else {
+            errorMsg = '❌ Admin license has expired!\n\n📧 Click "Contact Q Tech Support" link above for assistance.';
+          }
+        }
+        
         dispatch(setError(errorMsg));
         showToast(errorMsg, 'error');
-        throw new Error(errorMsg);
+        dispatch(setLoading(false));
+        return;
       }
 
-      // Store credentials in Redux and localStorage
+      // Show counter modal only for users with role='user' (not receptionist)
+      if (activeTab === 'user' && data.user.role === 'user') {
+        setPendingUserData({
+          user: data.user,
+          token: data.token,
+        });
+        setShowCounterModal(true);
+        dispatch(setLoading(false));
+        return;
+      }
+
+      // For receptionist and other roles, store credentials directly (no counter needed)
       dispatch(setCredentials({
         user: data.user,
         token: data.token,
@@ -161,18 +267,10 @@ export default function LoginPage() {
       // Show success message
       showToast('Login successful!', 'success');
 
-      // Redirect based on role
-      setTimeout(() => {
-        const roleMapping = {
-          'super_admin': 'superadmin',
-          'admin': 'admin',
-          'user': 'user'
-        };
-        const mappedRole = roleMapping[data.user.role] || 'user';
-        router.push(`/${mappedRole}`);
-      }, 500);
+      // Let useEffect handle redirect after state update
     } catch (err) {
       console.error('Login error:', err);
+      // Don't set loading to false here, let finally block handle it
     } finally {
       dispatch(setLoading(false));
     }
@@ -184,8 +282,8 @@ export default function LoginPage() {
         <div className="bg-white shadow-lg rounded-lg overflow-hidden">
           <div className="p-8">
             {/* Logo */}
-            <div className="flex justify-center mb-6">
-              <Link href="/" className="text-2xl font-bold text-gray-800">
+            <div className="flex flex-col items-center mb-6">
+              <Link href="/" className="text-2xl font-bold text-gray-800 mb-3">
                 Q Management
               </Link>
             </div>
@@ -193,7 +291,7 @@ export default function LoginPage() {
             {/* Error Message */}
             {error && (
               <div className="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
-                <span className="block sm:inline">{error}</span>
+                <span className="block sm:inline whitespace-pre-line">{error}</span>
                 <button
                   onClick={() => dispatch(clearError())}
                   className="absolute top-0 bottom-0 right-0 px-4 py-3"
@@ -276,27 +374,6 @@ export default function LoginPage() {
                         {showPassword ? '👁️' : '👁️‍🗨️'}
                       </button>
                     </div>
-                  </div>
-
-                  <div>
-                    <label htmlFor="counter_no" className="block text-sm font-medium text-gray-700 mb-1">
-                      Select Counter
-                    </label>
-                    <select
-                      id="counter_no"
-                      name="counter_no"
-                      value={formData.counter_no}
-                      onChange={handleInputChange}
-                      required
-                      disabled={loading}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition disabled:bg-gray-100 disabled:cursor-not-allowed"
-                    >
-                      {counters.map((counter) => (
-                        <option key={counter} value={counter}>
-                          Counter {counter}
-                        </option>
-                      ))}
-                    </select>
                   </div>
 
                   <button
@@ -425,6 +502,19 @@ export default function LoginPage() {
           animation: fadeOut 0.3s ease-in;
         }
       `}</style>
+
+      {/* Counter Selection Modal */}
+      <CounterSelectionModal
+        isOpen={showCounterModal}
+        onClose={() => {
+          setShowCounterModal(false);
+          setPendingUserData(null);
+          dispatch(setLoading(false));
+        }}
+        adminId={pendingUserData?.user?.admin_id}
+        token={pendingUserData?.token}
+        onCounterSelect={handleCounterSelect}
+      />
     </div>
   );
 }

@@ -21,7 +21,6 @@ export default function UserManagementPage() {
     password: '',
     confirmPassword: '',
     role: 'user',
-    userType: 'user',
     status: 'active',
     adminId: '',
     permissions: {
@@ -42,7 +41,7 @@ export default function UserManagementPage() {
     email: '',
     password: '',
     confirmPassword: '',
-    userType: 'user',
+    role: 'user',
     status: 'active',
     adminId: '',
     permissions: {
@@ -132,31 +131,6 @@ export default function UserManagementPage() {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-    if (name === 'userType') {
-      if (value === 'receptionist') {
-        setFormData(prev => ({
-          ...prev,
-          userType: value,
-          permissions: {
-            canCreateTickets: true,
-            canViewReports: true,
-            canManageQueue: true,
-            canCallTickets: true
-          }
-        }));
-      } else {
-        setFormData(prev => ({
-          ...prev,
-          userType: value,
-          permissions: {
-            canCreateTickets: true,
-            canViewReports: false,
-            canManageQueue: false,
-            canCallTickets: false
-          }
-        }));
-      }
-    }
     if (errors[name]) setErrors(prev => ({ ...prev, [name]: '' }));
   };
 
@@ -175,7 +149,7 @@ export default function UserManagementPage() {
       email: user.email,
       password: '',
       confirmPassword: '',
-      userType: user.userType || 'user',
+      role: user.role || 'user',
       status: user.status,
       adminId: user.admin_id ? String(user.admin_id) : '',
       permissions: {
@@ -192,31 +166,6 @@ export default function UserManagementPage() {
   const handleEditChange = (e) => {
     const { name, value } = e.target;
     setEditForm(prev => ({ ...prev, [name]: value }));
-    if (name === 'userType') {
-      if (value === 'receptionist') {
-        setEditForm(prev => ({
-          ...prev,
-          userType: value,
-          permissions: {
-            canCreateTickets: true,
-            canViewReports: true,
-            canManageQueue: true,
-            canCallTickets: true
-          }
-        }));
-      } else {
-        setEditForm(prev => ({
-          ...prev,
-          userType: value,
-          permissions: {
-            canCreateTickets: true,
-            canViewReports: false,
-            canManageQueue: false,
-            canCallTickets: false
-          }
-        }));
-      }
-    }
     if (editErrors[name]) setEditErrors(prev => ({ ...prev, [name]: '' }));
   };
 
@@ -246,7 +195,7 @@ export default function UserManagementPage() {
     setEditSubmitting(true);
     try {
       const token = getToken();
-      const payload = { username: editForm.username, email: editForm.email, status: editForm.status };
+      const payload = { username: editForm.username, email: editForm.email, role: editForm.role, status: editForm.status };
       if (editForm.password) payload.password = editForm.password;
       if (currentUser?.role === 'super_admin' && editForm.adminId) payload.admin_id = Number(editForm.adminId);
       const res = await axios.put(`${apiUrl}/admin/users/${editForm.id}`, payload, { headers: { Authorization: `Bearer ${token}` } });
@@ -289,6 +238,7 @@ export default function UserManagementPage() {
         username: formData.username,
         email: formData.email,
         password: formData.password,
+        role: formData.role || 'user',
         admin_id: currentUser?.role === 'admin' ? currentUser.id : Number(formData.adminId),
         status: formData.status,
       };
@@ -461,15 +411,12 @@ export default function UserManagementPage() {
                   </div>
                 )}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">User Type</label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><FaUserTag className="text-gray-400" /></div>
-                    <select name="userType" value={formData.userType} onChange={handleChange} className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
-                      <option value="user">Regular User</option>
-                      <option value="receptionist">Receptionist</option>
-                    </select>
-                  </div>
-                  <p className="mt-1 text-xs text-gray-500">{formData.userType === 'receptionist' ? 'Full access to queue management' : 'Basic user access'}</p>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Role <span className="text-red-500">*</span></label>
+                  <select name="role" value={formData.role} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                    <option value="user">User</option>
+                    <option value="receptionist">Receptionist</option>
+                  </select>
+                  <p className="mt-1 text-xs text-gray-500">Select user role for login access</p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Status</label>
@@ -524,15 +471,12 @@ export default function UserManagementPage() {
                   </div>
                 )}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">User Type <span className="text-red-500">*</span></label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><FaUserTag className="text-gray-400" /></div>
-                    <select name="userType" value={editForm.userType} onChange={handleEditChange} className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
-                      <option value="user">Regular User</option>
-                      <option value="receptionist">Receptionist</option>
-                    </select>
-                  </div>
-                  <p className="mt-1 text-xs text-gray-500">{editForm.userType === 'receptionist' ? 'Full access to queue management' : 'Basic user access'}</p>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Role <span className="text-red-500">*</span></label>
+                  <select name="role" value={editForm.role} onChange={handleEditChange} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                    <option value="user">User</option>
+                    <option value="receptionist">Receptionist</option>
+                  </select>
+                  <p className="mt-1 text-xs text-gray-500">User role for login access</p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Status <span className="text-red-500">*</span></label>

@@ -1,32 +1,108 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import axios from 'axios';
+import { getToken } from '@/utils/sessionStorage';
 
 export default function UserDashboard() {
-  const [currentTicket, setCurrentTicket] = useState('G-106');
+  const router = useRouter();
+  const [currentTicket, setCurrentTicket] = useState('');
   const [manualTicketId, setManualTicketId] = useState('');
-  const [totalPending, setTotalPending] = useState(17);
-
-  const unassignedTickets = [
-    { id: 22, ticketNumber: 'G-106', service: 'General Services', submissionTime: '16:13:17', submissionDate: '2025-10-15' },
-    { id: 23, ticketNumber: 'G-107', service: 'General Services', submissionTime: '16:13:42', submissionDate: '2025-10-15' },
-    { id: 24, ticketNumber: 'G-108', service: 'General Services', submissionTime: '16:14:14', submissionDate: '2025-10-15' },
-    { id: 25, ticketNumber: 'L-504', service: 'Labor Services', submissionTime: '16:25:05', submissionDate: '2025-10-15' },
-    { id: 26, ticketNumber: 'L-505', service: 'Labor Services', submissionTime: '17:02:01', submissionDate: '2025-10-15' },
-  ];
-
+  const [totalPending, setTotalPending] = useState(0);
+  const [unassignedTickets, setUnassignedTickets] = useState([]);
+  const [assignedServices, setAssignedServices] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [visibleTickets, setVisibleTickets] = useState(5);
+  const [isCalling, setIsCalling] = useState(false);
 
-  const loadMoreTickets = () => {
-    setTotalPending(totalPending + 10);
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+
+  const fetchAssignedTickets = async () => {
+    const token = getToken();
+    if (!token) return;
+    
+    try {
+      setLoading(true);
+      const res = await axios.get(`${apiUrl}/user/tickets/assigned?status=Pending`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (res.data.success) {
+        const tickets = res.data.tickets || [];
+        const services = res.data.assignedServices || [];
+        
+        console.log('Assigned Services from API:', services);
+        
+        setUnassignedTickets(tickets);
+        setTotalPending(res.data.totalPending || tickets.length);
+        setAssignedServices(services);
+        
+        // Set first ticket as current
+        if (tickets.length > 0) {
+          setCurrentTicket(tickets[0].ticketNumber);
+        }
+      }
+    } catch (error) {
+      console.error('[UserDashboard] Error fetching tickets:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleCall = () => {
-    console.log('Call button clicked');
+  useEffect(() => {
+    fetchAssignedTickets();
+  }, []);
+
+  const loadMoreTickets = () => {
+    fetchAssignedTickets();
+  };
+
+  const handleCall = async () => {
+    if (currentTicket && !isCalling) {
+      const token = getToken();
+      if (!token) return;
+      
+      setIsCalling(true); // Disable button
+      
+      try {
+        // Call the ticket and save to backend
+        const response = await axios.post(
+          `${apiUrl}/user/call-ticket`,
+          { ticketNumber: currentTicket },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        
+        console.log('✅ Ticket called successfully:', response.data);
+        
+        // Prepare ticket data
+        const ticketData = {
+          ticket: currentTicket,
+          counter: response.data.counterNo || '',
+          timestamp: new Date().getTime()
+        };
+        
+        // Save to localStorage for persistence
+        localStorage.setItem('latest_ticket_call', JSON.stringify(ticketData));
+        
+        // Broadcast to ticket_info page using BroadcastChannel
+        const channel = new BroadcastChannel('ticket-calls');
+        channel.postMessage(ticketData);
+        console.log('📡 Broadcasted ticket data:', ticketData);
+        channel.close();
+        
+      } catch (error) {
+        console.error('[UserDashboard] Error calling ticket:', error);
+      } finally {
+        // Re-enable button after 2 seconds
+        setTimeout(() => setIsCalling(false), 2000);
+      }
+    }
   };
 
   const handleNext = () => {
-    if (unassignedTickets.length > 0) {
-      setCurrentTicket(unassignedTickets[0].ticketNumber);
+    const currentIndex = unassignedTickets.findIndex(t => t.ticketNumber === currentTicket);
+    if (currentIndex < unassignedTickets.length - 1) {
+      setCurrentTicket(unassignedTickets[currentIndex + 1].ticketNumber);
     }
   };
 
@@ -41,9 +117,32 @@ export default function UserDashboard() {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="p-6 bg-gray-100 min-h-screen flex items-center justify-center">
+        <div className="text-lg text-gray-600">Loading tickets...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 bg-gray-100 min-h-screen">
       <div className="max-w-7xl mx-auto">
+        {/* Assigned Services Info */}
+        {assignedServices && assignedServices.length > 0 ? (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+            <p className="text-sm text-blue-800">
+              <strong>Assigned Services:</strong> {assignedServices.map(s => s.name || s.service_name).join(', ')}
+            </p>
+          </div>
+        ) : (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+            <p className="text-sm text-yellow-800">
+              <strong>No services assigned.</strong> Please contact your administrator to assign services.
+            </p>
+          </div>
+        )}
+
         {/* Top Section */}
         <div className="flex ml-2 gap-3 mb-6">
           {/* Load More Tickets Card - Left */}
@@ -82,9 +181,14 @@ export default function UserDashboard() {
         <div className="flex justify-center gap-3 mb-6">
           <button
             onClick={handleCall}
-            className="bg-green-500 hover:bg-green-600 text-white px-10 py-3 rounded-lg text-lg font-medium transition-colors"
+            disabled={isCalling}
+            className={`px-10 py-3 rounded-lg text-lg font-medium transition-colors ${
+              isCalling 
+                ? 'bg-gray-400 cursor-not-allowed text-white' 
+                : 'bg-green-500 hover:bg-green-600 text-white'
+            }`}
           >
-            Call
+            {isCalling ? 'Calling...' : 'Call'}
           </button>
           <button
             onClick={handleNext}
@@ -144,36 +248,46 @@ export default function UserDashboard() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {unassignedTickets.slice(0, visibleTickets).map((ticket) => (
-                  <tr key={ticket.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {ticket.id}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {ticket.ticketNumber}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {ticket.service}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {ticket.submissionTime}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {ticket.submissionDate}
+                {unassignedTickets.length === 0 ? (
+                  <tr>
+                    <td colSpan="5" className="px-6 py-8 text-center text-gray-500">
+                      No pending tickets found for your assigned services.
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  unassignedTickets.slice(0, visibleTickets).map((ticket) => (
+                    <tr key={ticket.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {ticket.id}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {ticket.ticketNumber}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {ticket.service}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                        {ticket.submissionTime}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                        {ticket.submissionDate}
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
-          <div className="px-6 py-4 border-t border-gray-200">
-            <button
-              onClick={() => setVisibleTickets(visibleTickets + 5)}
-              className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
-            >
-              Show More
-            </button>
-          </div>
+          {unassignedTickets.length > visibleTickets && (
+            <div className="px-6 py-4 border-t border-gray-200">
+              <button
+                onClick={() => setVisibleTickets(visibleTickets + 5)}
+                className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+              >
+                Show More
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -1,76 +1,207 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useSelector } from 'react-redux';
 
 export default function Home() {
+  const router = useRouter();
+  const currentUser = useSelector((state) => state.auth.user);
+  const token = useSelector((state) => state.auth.token);
+  const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
+
   const [showRecentTickets, setShowRecentTickets] = useState(false);
   const [showReportsModal, setShowReportsModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const [selectedService, setSelectedService] = useState('');
+  const [selectedService, setSelectedService] = useState(null);
+  const [services, setServices] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [customerDetails, setCustomerDetails] = useState({
     name: '',
     email: '',
     number: ''
   });
   const [activeField, setActiveField] = useState('name');
-  const [recentTickets] = useState([
-    { id: 1, ticketNumber: 'A001', service: 'Service 1', time: '10:30 AM' },
-    { id: 2, ticketNumber: 'A002', service: 'Service 1', time: '10:45 AM' },
-    { id: 3, ticketNumber: 'B001', service: 'Service 2', time: '11:00 AM' },
-    { id: 4, ticketNumber: 'B002', service: 'Service 2', time: '11:15 AM' },
-    { id: 5, ticketNumber: 'C001', service: 'Service 3', time: '11:30 AM' },
-  ]);
+  const [licenseData, setLicenseData] = useState(null);
 
-  const [reportTickets] = useState([
-    { 
-      id: 1, 
-      ticketNumber: 'A001', 
-      dateTime: '2024-11-25 10:30 AM',
-      service: 'General Inquiry', 
-      user: 'John Doe',
-      customerName: 'Ahmad Ali',
-      status: 'Completed'
-    },
-    { 
-      id: 2, 
-      ticketNumber: 'A002', 
-      dateTime: '2024-11-25 10:45 AM',
-      service: 'Customer Support', 
-      user: 'Jane Smith',
-      customerName: 'Muhammad Hassan',
-      status: 'Pending'
-    },
-    { 
-      id: 3, 
-      ticketNumber: 'B001', 
-      dateTime: '2024-11-25 11:00 AM',
-      service: 'Technical Support', 
-      user: 'Mike Johnson',
-      customerName: 'Fatima Khan',
-      status: 'Completed'
-    },
-    { 
-      id: 4, 
-      ticketNumber: 'B002', 
-      dateTime: '2024-11-25 11:15 AM',
-      service: 'Billing', 
-      user: 'Sarah Williams',
-      customerName: 'Ali Raza',
-      status: 'In Progress'
-    },
-    { 
-      id: 5, 
-      ticketNumber: 'C001', 
-      dateTime: '2024-11-25 11:30 AM',
-      service: 'General Inquiry', 
-      user: 'David Brown',
-      customerName: 'Sara Ahmed',
-      status: 'Completed'
-    },
-  ]);
+  // Fetch services and license data for the logged-in user's admin
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!currentUser || !token) {
+        console.log('No currentUser or token');
+        return;
+      }
 
-  const handleReprint = (ticketNumber) => {
-    console.log('Reprinting ticket:', ticketNumber);
-    alert(`Reprinting ticket: ${ticketNumber}`);
+      console.log('Current User:', currentUser);
+      console.log('Admin ID:', currentUser.admin_id);
+
+      try {
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+        
+        // Fetch services
+        const servicesResponse = await fetch(`${API_URL}/services/user/${currentUser.id}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (servicesResponse.ok) {
+          const servicesData = await servicesResponse.json();
+          setServices(servicesData.services || []);
+        } else {
+          console.error('Failed to fetch services');
+        }
+
+        // Fetch license data for admin
+        if (currentUser.admin_id) {
+          console.log('Fetching license for admin_id:', currentUser.admin_id);
+          const licenseResponse = await fetch(`${API_URL}/license/admin-license/${currentUser.admin_id}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
+
+          console.log('License Response Status:', licenseResponse.status);
+          
+          if (licenseResponse.ok) {
+            const licenseInfo = await licenseResponse.json();
+            console.log('License Info:', licenseInfo);
+            setLicenseData(licenseInfo.data);
+          } else {
+            const errorData = await licenseResponse.json();
+            console.error('Failed to fetch license data:', errorData);
+          }
+        } else {
+          console.error('No admin_id found in currentUser');
+        }
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [currentUser, token]);
+
+  useEffect(() => {
+    // Check if user is authenticated
+    if (!isAuthenticated) {
+      router.push('/login');
+      return;
+    }
+
+    // If user is admin or super_admin, redirect to their dashboard
+    if (currentUser?.role === 'admin' || currentUser?.role === 'super_admin') {
+      router.push(`/${currentUser.role}/dashboard`);
+      return;
+    }
+
+    // Receptionist (user role) can access this page
+  }, [isAuthenticated, currentUser, router]);
+  const [recentTickets, setRecentTickets] = useState([]);
+  const [reportTickets, setReportTickets] = useState([]);
+
+  // Fetch tickets
+  useEffect(() => {
+    const fetchTickets = async () => {
+      if (!currentUser || !token) return;
+
+      try {
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+        
+        // Fetch today's tickets for recent tickets dropdown
+        const recentResponse = await fetch(`${API_URL}/tickets?userId=${currentUser.id}&today=true`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (recentResponse.ok) {
+          const recentData = await recentResponse.json();
+          const formattedRecent = recentData.tickets.map(ticket => ({
+            id: ticket.id,
+            ticketNumber: ticket.ticket_id,
+            service: ticket.service_name,
+            time: new Date(ticket.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
+          }));
+          setRecentTickets(formattedRecent);
+        }
+
+        // Fetch all tickets for reports
+        const allResponse = await fetch(`${API_URL}/tickets?userId=${currentUser.id}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (allResponse.ok) {
+          const allData = await allResponse.json();
+          const formattedAll = allData.tickets.map(ticket => ({
+            id: ticket.id,
+            ticketNumber: ticket.ticket_id,
+            dateTime: new Date(ticket.created_at).toLocaleString('en-US', { 
+              year: 'numeric', 
+              month: '2-digit', 
+              day: '2-digit',
+              hour: '2-digit', 
+              minute: '2-digit',
+              hour12: true 
+            }),
+            service: ticket.service_name,
+            user: currentUser.username,
+            customerName: ticket.name || 'N/A',
+            status: ticket.status ? ticket.status.charAt(0).toUpperCase() + ticket.status.slice(1) : 'Pending'
+          }));
+          setReportTickets(formattedAll);
+        }
+      } catch (error) {
+        console.error('Error fetching tickets:', error);
+      }
+    };
+
+    fetchTickets();
+  }, [currentUser, token]);
+
+  const handleReprint = async (ticket) => {
+    try {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+      
+      // Fetch ticket details from database
+      const response = await fetch(`${API_URL}/tickets?search=${ticket.ticketNumber || ticket}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.tickets && data.tickets.length > 0) {
+          const ticketData = data.tickets[0];
+          
+          // Create service object for printing
+          const service = {
+            service_name: ticketData.service_name
+          };
+          
+          // Customer details
+          const customerData = {
+            name: ticketData.name || '',
+            email: ticketData.email || '',
+            number: ticketData.number || ''
+          };
+          
+          // Print the ticket
+          printTicket(service, customerData, ticketData.ticket_id);
+        }
+      }
+    } catch (error) {
+      console.error('Error reprinting ticket:', error);
+    }
   };
 
   const handleView = (ticket) => {
@@ -97,34 +228,132 @@ export default function Home() {
     }
   };
 
-  const handleSkip = () => {
+  const handleSkip = async () => {
+    let ticketNumber = '';
+    
+    // Save ticket to database without customer details
+    try {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${API_URL}/tickets`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          service_id: selectedService.id,
+          user_id: currentUser.id,
+          admin_id: currentUser.admin_id
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        ticketNumber = data.ticket_id;
+        
+        // Refresh tickets list
+        const recentResponse = await fetch(`${API_URL}/tickets?userId=${currentUser.id}&today=true`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        if (recentResponse.ok) {
+          const recentData = await recentResponse.json();
+          const formattedRecent = recentData.tickets.map(ticket => ({
+            id: ticket.id,
+            ticketNumber: ticket.ticket_id,
+            service: ticket.service_name,
+            time: new Date(ticket.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
+          }));
+          setRecentTickets(formattedRecent);
+        }
+      }
+    } catch (error) {
+      console.error('Error saving ticket:', error);
+    }
+    
     setShowDetailsModal(false);
     // Print ticket without customer details
-    printTicket(selectedService, { name: '', email: '', number: '' });
+    if (ticketNumber) {
+      printTicket(selectedService, { name: '', email: '', number: '' }, ticketNumber);
+    }
     setCustomerDetails({ name: '', email: '', number: '' });
   };
 
-  const handleSubmit = (serviceName = 'General Service') => {
+  const handleSubmit = async (service) => {
     console.log('Customer Details:', customerDetails);
-    // Save the details here
+    
+    let ticketNumber = '';
+    
+    // Save ticket to database
+    try {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${API_URL}/tickets`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          service_id: service.id,
+          name: customerDetails.name,
+          email: customerDetails.email,
+          number: customerDetails.number,
+          user_id: currentUser.id,
+          admin_id: currentUser.admin_id
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        ticketNumber = data.ticket_id;
+        
+        // Refresh tickets list
+        const recentResponse = await fetch(`${API_URL}/tickets?userId=${currentUser.id}&today=true`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        if (recentResponse.ok) {
+          const recentData = await recentResponse.json();
+          const formattedRecent = recentData.tickets.map(ticket => ({
+            id: ticket.id,
+            ticketNumber: ticket.ticket_id,
+            service: ticket.service_name,
+            time: new Date(ticket.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
+          }));
+          setRecentTickets(formattedRecent);
+        }
+      }
+    } catch (error) {
+      console.error('Error saving ticket:', error);
+    }
+    
     setShowDetailsModal(false);
     
     // Print ticket
-    printTicket(serviceName, customerDetails);
+    if (ticketNumber) {
+      printTicket(service, customerDetails, ticketNumber);
+    }
     
     // Reset form
     setCustomerDetails({ name: '', email: '', number: '' });
   };
 
-  const printTicket = (serviceName, customerData) => {
-    // Generate ticket number
-    const ticketPrefix = serviceName.charAt(0).toUpperCase();
-    const ticketNumber = `${ticketPrefix}-${Math.floor(Math.random() * 900) + 100}`;
+  const printTicket = (service, customerData, ticketNumber) => {
+    // Debug: Check license data
+    console.log('License Data:', licenseData);
+    console.log('Company Logo:', licenseData?.company_logo);
+    console.log('Company Name:', licenseData?.company_name);
+    
+    const serviceName = service?.service_name || service || 'General Service';
     
     // Get current date and time
     const now = new Date();
     const date = now.toLocaleDateString('en-GB');
-    const time = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+    const time = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
     
     // Create print window
     const printWindow = window.open('', '_blank', 'width=400,height=600');
@@ -158,8 +387,8 @@ export default function Home() {
           }
           .logo-container {
             background: white;
-            padding: 6px 10px;
-            border-radius: 4px;
+            padding: 10px 15px;
+            border-radius: 6px;
             font-weight: bold;
             font-size: 14px;
             color: #667eea;
@@ -170,11 +399,11 @@ export default function Home() {
             text-align: center;
           }
           .company-name {
-            font-size: 13px;
+            font-size: 16px;
             font-weight: bold;
             color: #333;
-            margin-bottom: 8px;
-            line-height: 1.3;
+            margin-bottom: 10px;
+            line-height: 1.4;
           }
           .service-type {
             font-size: 11px;
@@ -256,10 +485,12 @@ export default function Home() {
       <body>
         <div class="ticket">
           <div class="ticket-header">
-            <div class="logo-container">LOGO</div>
+            <div class="logo-container">
+              ${licenseData?.company_logo ? `<img src="http://localhost:5000${licenseData.company_logo}" alt="Logo" style="max-height: 60px; max-width: 180px; display: block; margin: 0 auto;" />` : 'LOGO'}
+            </div>
           </div>
           <div class="ticket-details">
-            <h2 class="company-name">Emirates Professional Businessmen Services</h2>
+            <h2 class="company-name">${licenseData?.company_name || 'Emirates Professional Businessmen Services'}</h2>
             <p class="service-type">Service Type: <strong>${serviceName}</strong></p>
             ${customerData.name || customerData.email || customerData.number ? `
               <div class="customer-info">
@@ -318,6 +549,17 @@ export default function Home() {
           
           {/* Action Buttons */}
           <div className="flex items-center gap-4">
+            {/* Ticket Info Display Button */}
+            <button
+              onClick={() => router.push('/ticket_info')}
+              className="px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-lg shadow-lg hover:shadow-xl hover:from-purple-700 hover:to-purple-800 transition-all flex items-center gap-2"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+              <span className="font-semibold">Ticket Display</span>
+            </button>
+
             {/* Reports Button */}
             <button
               onClick={() => setShowReportsModal(true)}
@@ -351,7 +593,12 @@ export default function Home() {
                     <h3 className="font-semibold text-gray-800">Recent Tickets</h3>
                   </div>
                   <div className="py-2">
-                    {recentTickets.map((ticket) => (
+                    {recentTickets.length === 0 ? (
+                      <div className="px-4 py-8 text-center text-gray-500">
+                        <p className="text-sm">No tickets created today</p>
+                      </div>
+                    ) : 
+                      recentTickets.map((ticket) => (
                       <div
                         key={ticket.id}
                         className="px-4 py-3 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0"
@@ -367,7 +614,7 @@ export default function Home() {
                             <p className="text-sm text-gray-600">{ticket.service}</p>
                           </div>
                           <button
-                            onClick={() => handleReprint(ticket.ticketNumber)}
+                            onClick={() => handleReprint(ticket)}
                             className="ml-3 px-4 py-2 bg-orange-500 text-white text-sm rounded-lg hover:bg-orange-600 transition-colors flex items-center gap-1.5 shadow-md hover:shadow-lg"
                           >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -385,65 +632,67 @@ export default function Home() {
           </div>
         </div>
         
-        {/* Service Grid - Sample Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Service Card 1 */}
-          <div 
-            onClick={() => {
-              setSelectedService('General Inquiry');
-              setShowDetailsModal(true);
-            }}
-            className="bg-purple-600 rounded-lg shadow-lg hover:scale-105 hover:shadow-xl transition-all duration-300 cursor-pointer"
-          >
-            <div className="p-8 flex flex-col items-center justify-center text-white">
-              <div className="w-24 h-24 mb-4 bg-white/20 rounded-full flex items-center justify-center">
-                <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-              </div>
-              <h5 className="text-xl font-semibold text-center mb-1">General Inquiry</h5>
-              <h6 className="text-sm text-center opacity-90">استفسار عام</h6>
+        {/* Service Grid - Dynamic Cards from Database */}
+        {loading ? (
+          <div className="flex justify-center items-center py-20">
+            <div className="text-center">
+              <svg className="animate-spin h-12 w-12 mx-auto text-green-600 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <p className="text-gray-600">Loading services...</p>
             </div>
           </div>
-
-          {/* Service Card 2 */}
-          <div 
-            onClick={() => {
-              setSelectedService('Customer Support');
-              setShowDetailsModal(true);
-            }}
-            className="bg-blue-600 rounded-lg shadow-lg hover:scale-105 hover:shadow-xl transition-all duration-300 cursor-pointer"
-          >
-            <div className="p-8 flex flex-column items-center justify-center text-white">
-              <div className="w-24 h-24 mb-4 bg-white/20 rounded-full flex items-center justify-center">
-                <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-              </div>
-              <h5 className="text-xl font-semibold text-center mb-1">Customer Support</h5>
-              <h6 className="text-sm text-center opacity-90">دعم العملاء</h6>
-            </div>
+        ) : services.length === 0 ? (
+          <div className="text-center py-20">
+            <svg className="w-24 h-24 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+            </svg>
+            <h3 className="text-xl font-semibold text-gray-700 mb-2">No Services Available</h3>
+            <p className="text-gray-600">Please contact your administrator to add services.</p>
           </div>
-
-          {/* Service Card 3 */}
-          <div 
-            onClick={() => {
-              setSelectedService('Technical Support');
-              setShowDetailsModal(true);
-            }}
-            className="bg-green-600 rounded-lg shadow-lg hover:scale-105 hover:shadow-xl transition-all duration-300 cursor-pointer"
-          >
-            <div className="p-8 flex flex-col items-center justify-center text-white">
-              <div className="w-24 h-24 mb-4 bg-white/20 rounded-full flex items-center justify-center">
-                <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-                </svg>
-              </div>
-              <h5 className="text-xl font-semibold text-center mb-1">Technical Support</h5>
-              <h6 className="text-sm text-center opacity-90">الدعم الفني</h6>
-            </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {services.map((service, index) => {
+              const colors = ['purple', 'blue', 'green', 'red', 'yellow', 'indigo', 'pink', 'teal'];
+              const color = service.color || colors[index % colors.length];
+              const bgColor = service.color || `bg-${color}-600`;
+              
+              return (
+                <div 
+                  key={service.id}
+                  onClick={() => {
+                    setSelectedService(service);
+                    setShowDetailsModal(true);
+                  }}
+                  className="rounded-lg shadow-lg hover:scale-105 hover:shadow-xl transition-all duration-300 cursor-pointer"
+                  style={{ backgroundColor: service.color || `rgb(${Math.random() * 100 + 100}, ${Math.random() * 100 + 50}, ${Math.random() * 100 + 100})` }}
+                >
+                  <div className="p-8 flex flex-col items-center justify-center text-white">
+                    {service.logo_url ? (
+                      <div className="w-24 h-24 mb-4 bg-white/20 rounded-full flex items-center justify-center overflow-hidden">
+                        <img src={`http://localhost:5000${service.logo_url}`} alt={service.service_name} className="w-16 h-16 object-contain" />
+                      </div>
+                    ) : (
+                      <div className="w-24 h-24 mb-4 bg-white/20 rounded-full flex items-center justify-center">
+                        <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                      </div>
+                    )}
+                    <h5 className="text-xl font-semibold text-center mb-1">{service.service_name}</h5>
+                    {service.service_name_arabic && (
+                      <h6 className="text-sm text-center opacity-90">{service.service_name_arabic}</h6>
+                    )}
+                    {service.description && (
+                      <p className="text-xs text-center opacity-75 mt-2">{service.description}</p>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
-        </div>
+        )}
 
         {/* Footer */}
         <footer className="mt-16 py-6 border-t border-gray-200">
@@ -713,7 +962,20 @@ export default function Home() {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {reportTickets.map((ticket) => (
+                      {reportTickets.length === 0 ? (
+                        <tr>
+                          <td colSpan="7" className="px-6 py-12 text-center">
+                            <div className="flex flex-col items-center justify-center">
+                              <svg className="w-16 h-16 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                              </svg>
+                              <p className="text-gray-500 text-lg font-medium">No tickets found</p>
+                              <p className="text-gray-400 text-sm mt-1">Create your first ticket to see it here</p>
+                            </div>
+                          </td>
+                        </tr>
+                      ) : 
+                        reportTickets.map((ticket) => (
                         <tr key={ticket.id} className="hover:bg-gray-50 transition-colors">
                           <td className="px-6 py-4 text-sm text-gray-700">{ticket.dateTime}</td>
                           <td className="px-6 py-4">
@@ -751,7 +1013,7 @@ export default function Home() {
 
                               {/* Reprint Button */}
                               <button
-                                onClick={() => handleReprint(ticket.ticketNumber)}
+                                onClick={() => handleReprint(ticket)}
                                 className="px-4 py-2 bg-orange-500 text-white text-sm rounded-lg hover:bg-orange-600 transition-colors flex items-center gap-1.5 shadow-md hover:shadow-lg"
                               >
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -770,7 +1032,7 @@ export default function Home() {
             </div>
 
             {/* Modal Footer */}
-            <div className="px-8 py-4 border-t border-gray-200 bg-gray-50 flex justify-between items-center">
+            {/* <div className="px-8 py-4 border-t border-gray-200 bg-gray-50 flex justify-between items-center">
               <p className="text-sm text-gray-600">Total Tickets: <span className="font-semibold">{reportTickets.length}</span></p>
               <button
                 onClick={() => setShowReportsModal(false)}
@@ -778,7 +1040,7 @@ export default function Home() {
               >
                 Close
               </button>
-            </div>
+            </div> */}
           </div>
         </div>
       )}

@@ -159,7 +159,7 @@ export default function Navbar() {
                   setShowProfile(!showProfile);
                   setShowNotifications(false);
                 }}
-                className="flex items-center gap-2.5 px-2.5 py-1.5 hover:bg-gray-50 rounded-lg transition-all duration-200 border border-transparent hover:border-gray-200"
+                className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg transition-all duration-200 border border-transparent hover:border-gray-200"
                 aria-label="User menu"
               >
                 <div className="w-8 h-8 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center text-white font-semibold shadow-md text-sm">
