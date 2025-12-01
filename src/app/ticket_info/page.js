@@ -94,7 +94,16 @@ export default function TicketInfo() {
 
   // Setup BroadcastChannel for cross-tab communication
   useEffect(() => {
+    // Only run on client side
+    if (typeof window === 'undefined') return;
+    
     console.log('🚀 Setting up BroadcastChannel for ticket_info');
+    
+    // Check if BroadcastChannel is supported
+    if (typeof BroadcastChannel === 'undefined') {
+      console.warn('BroadcastChannel not supported, relying on polling');
+      return;
+    }
     
     // Create broadcast channel
     const channel = new BroadcastChannel('ticket-calls');
@@ -122,9 +131,9 @@ export default function TicketInfo() {
     };
     
     // Also check localStorage on mount for existing data
-    const ticketData = localStorage.getItem('latest_ticket_call');
-    if (ticketData) {
-      try {
+    try {
+      const ticketData = localStorage.getItem('latest_ticket_call');
+      if (ticketData) {
         const data = JSON.parse(ticketData);
         console.log('📦 Found existing ticket in localStorage:', data);
         if (data.ticket) {
@@ -132,9 +141,9 @@ export default function TicketInfo() {
           setCurrentCounter(data.counter || 'N/A');
           setLastAnnouncedTime(data.timestamp);
         }
-      } catch (e) {
-        console.error('❌ Error parsing localStorage data:', e);
       }
+    } catch (e) {
+      console.error('❌ Error parsing localStorage data:', e);
     }
     
     return () => {
@@ -145,7 +154,10 @@ export default function TicketInfo() {
 
   // Load available voices on mount
   useEffect(() => {
-    if ('speechSynthesis' in window) {
+    // Only run on client side
+    if (typeof window === 'undefined') return;
+    
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       const loadVoices = () => {
         const voices = window.speechSynthesis.getVoices();
         if (voices.length > 0) {
@@ -161,26 +173,29 @@ export default function TicketInfo() {
 
   // Announce ticket using admin-configured TTS settings
   const announceTicket = (ticketNumber, counterNumber) => {
+    // Only run on client side
+    if (typeof window === 'undefined') return;
+    
     if (!('speechSynthesis' in window)) {
       console.error('Speech synthesis not supported');
       return;
     }
 
     // Get admin's saved TTS settings from localStorage
-    const savedSettings = localStorage.getItem('tts_settings');
     let settings = {
       selectedVoice: '',
       speechRate: 0.9,
       speechPitch: 1.0
     };
     
-    if (savedSettings) {
-      try {
+    try {
+      const savedSettings = localStorage.getItem('tts_settings');
+      if (savedSettings) {
         settings = JSON.parse(savedSettings);
         console.log('Using admin TTS settings:', settings);
-      } catch (e) {
-        console.error('Error parsing TTS settings:', e);
       }
+    } catch (e) {
+      console.error('Error parsing TTS settings:', e);
     }
     
     // Create announcement text
