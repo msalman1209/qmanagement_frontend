@@ -88,17 +88,31 @@ export default function Home() {
   useEffect(() => {
     // Check if user is authenticated
     if (!isAuthenticated) {
-      router.push('/login');
+      console.log('❌ Not authenticated, redirecting to login');
+      router.replace('/login');
       return;
     }
+
+    console.log('✅ User authenticated:', currentUser?.role);
 
     // If user is admin or super_admin, redirect to their dashboard
     if (currentUser?.role === 'admin' || currentUser?.role === 'super_admin') {
-      router.push(`/${currentUser.role}/dashboard`);
+      console.log('🔄 Redirecting admin to dashboard');
+      router.replace(`/${currentUser.role}/dashboard`);
       return;
     }
 
-    // Receptionist (user role) can access this page
+    // If user has 'user' role with counter, redirect to user dashboard
+    if (currentUser?.role === 'user') {
+      console.log('🔄 Redirecting user to dashboard');
+      router.replace('/user/dashboard');
+      return;
+    }
+
+    // Only receptionist can access this page
+    if (currentUser?.role === 'receptionist') {
+      console.log('✅ Receptionist accessing home page');
+    }
   }, [isAuthenticated, currentUser, router]);
   const [recentTickets, setRecentTickets] = useState([]);
   const [reportTickets, setReportTickets] = useState([]);

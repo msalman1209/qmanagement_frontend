@@ -50,7 +50,8 @@ export default function LoginPage() {
       };
       const redirectPath = roleMapping[user.role];
       if (redirectPath) {
-        router.push(redirectPath);
+        console.log(`🔄 Redirecting ${user.role} to ${redirectPath}`);
+        router.replace(redirectPath); // Use replace instead of push for immediate redirect
       }
     }
   }, [isAuthenticated, user, router]);
@@ -266,12 +267,19 @@ export default function LoginPage() {
 
       // Show success message
       showToast('Login successful!', 'success');
+      
+      dispatch(setLoading(false));
 
-      // Let useEffect handle redirect after state update
+      // Immediate redirect for receptionist
+      if (data.user.role === 'receptionist') {
+        console.log('🔄 Redirecting receptionist to home page');
+        setTimeout(() => {
+          router.replace('/');
+        }, 100);
+      }
+      // Let useEffect handle redirect for other roles
     } catch (err) {
       console.error('Login error:', err);
-      // Don't set loading to false here, let finally block handle it
-    } finally {
       dispatch(setLoading(false));
     }
   };
