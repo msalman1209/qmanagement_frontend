@@ -8,7 +8,7 @@ export default function ConfigurationPage() {
   const [selectedVoice, setSelectedVoice] = useState('');
   const [speechRate, setSpeechRate] = useState(0.9);
   const [speechPitch, setSpeechPitch] = useState(1.0);
-  const [testText, setTestText] = useState('Ticket number 103 proceed to counter number 4');
+  const [testText, setTestText] = useState('Ticket number 101 please come to counter 5');
 
   useEffect(() => {
     // Load saved settings from localStorage

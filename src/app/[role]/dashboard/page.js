@@ -65,48 +65,36 @@ export default function UserDashboard() {
       setIsCalling(true); // Disable button
       
       try {
-        // Prepare ticket data immediately (optimistic update)
-        const ticketData = {
-          ticket: currentTicket,
-          counter: '', // Will be updated from response
-          timestamp: new Date().getTime()
-        };
-        
-        // Broadcast immediately for instant UI update
-        const channel = new BroadcastChannel('ticket-calls');
-        channel.postMessage(ticketData);
-        
-        // Call the ticket API (don't await, process in background)
-        axios.post(
+        // Call the ticket and save to backend
+        const response = await axios.post(
           `${apiUrl}/user/call-ticket`,
           { ticketNumber: currentTicket },
           { headers: { Authorization: `Bearer ${token}` } }
-        ).then(response => {
-          console.log('✅ Ticket called successfully:', response.data);
-          
-          // Update with actual counter number
-          const updatedData = {
-            ...ticketData,
-            counter: response.data.counterNo || ''
-          };
-          
-          // Save to localStorage for persistence
-          localStorage.setItem('latest_ticket_call', JSON.stringify(updatedData));
-          
-          // Broadcast updated data with counter
-          channel.postMessage(updatedData);
-        }).catch(error => {
-          console.error('[UserDashboard] Error calling ticket:', error);
-        }).finally(() => {
-          channel.close();
-        });
+        );
         
-        // Re-enable button immediately after 500ms
-        setTimeout(() => setIsCalling(false), 500);
+        console.log('✅ Ticket called successfully:', response.data);
+        
+        // Prepare ticket data
+        const ticketData = {
+          ticket: currentTicket,
+          counter: response.data.counterNo || '',
+          timestamp: new Date().getTime()
+        };
+        
+        // Save to localStorage for persistence
+        localStorage.setItem('latest_ticket_call', JSON.stringify(ticketData));
+        
+        // Broadcast to ticket_info page using BroadcastChannel
+        const channel = new BroadcastChannel('ticket-calls');
+        channel.postMessage(ticketData);
+        console.log('📡 Broadcasted ticket data:', ticketData);
+        channel.close();
         
       } catch (error) {
         console.error('[UserDashboard] Error calling ticket:', error);
-        setIsCalling(false);
+      } finally {
+        // Re-enable button after 2 seconds
+        setTimeout(() => setIsCalling(false), 2000);
       }
     }
   };
