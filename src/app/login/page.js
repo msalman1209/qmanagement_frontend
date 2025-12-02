@@ -124,7 +124,8 @@ export default function LoginPage() {
       setShowCounterModal(false);
       setPendingUserData(null);
       
-      // Let useEffect handle redirect
+      // Redirect immediately to user dashboard
+      router.push('/user/dashboard');
     } catch (err) {
       console.error('Counter assignment error:', err);
       showToast('Failed to assign counter', 'error');
@@ -211,7 +212,16 @@ export default function LoginPage() {
         // Show success message
         showToast('Login successful!', 'success');
 
-        // Let useEffect handle redirect after state update
+        // Redirect immediately based on role
+        const roleMapping = {
+          'super_admin': '/superadmin',
+          'admin': '/admin',
+        };
+        const redirectPath = roleMapping[data.user.role];
+        if (redirectPath) {
+          router.push(redirectPath);
+        }
+        
         dispatch(setLoading(false));
         return;
       }
@@ -267,7 +277,15 @@ export default function LoginPage() {
       // Show success message
       showToast('Login successful!', 'success');
 
-      // Let useEffect handle redirect after state update
+      // Redirect immediately based on role
+      const roleMapping = {
+        'receptionist': '/',
+        'user': '/user/dashboard',
+      };
+      const redirectPath = roleMapping[data.user.role];
+      if (redirectPath) {
+        router.push(redirectPath);
+      }
     } catch (err) {
       console.error('Login error:', err);
       // Don't set loading to false here, let finally block handle it
