@@ -257,8 +257,13 @@ export default function LoginPage() {
         return;
       }
 
+      console.log('Login response data:', data);
+      console.log('User role:', data.user.role);
+      console.log('Active tab:', activeTab);
+
       // Show counter modal only for users with role='user' (not receptionist)
       if (activeTab === 'user' && data.user.role === 'user') {
+        console.log('Showing counter modal for regular user');
         setPendingUserData({
           user: data.user,
           token: data.token,
@@ -269,6 +274,7 @@ export default function LoginPage() {
       }
 
       // For receptionist and other roles, store credentials directly (no counter needed)
+      console.log('Storing credentials for role:', data.user.role);
       dispatch(setCredentials({
         user: data.user,
         token: data.token,
@@ -283,8 +289,11 @@ export default function LoginPage() {
         'user': '/user/dashboard',
       };
       const redirectPath = roleMapping[data.user.role];
+      console.log('Redirecting to:', redirectPath);
       if (redirectPath) {
         router.push(redirectPath);
+      } else {
+        console.warn('No redirect path found for role:', data.user.role);
       }
     } catch (err) {
       console.error('Login error:', err);

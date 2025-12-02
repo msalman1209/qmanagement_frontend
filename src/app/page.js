@@ -92,19 +92,25 @@ export default function Home() {
     const timer = setTimeout(() => {
       setAuthChecking(false);
       
+      console.log('Auth check - isAuthenticated:', isAuthenticated);
+      console.log('Auth check - currentUser:', currentUser);
+      
       // Check if user is authenticated
       if (!isAuthenticated) {
+        console.log('Not authenticated, redirecting to login');
         router.push('/login');
         return;
       }
 
       // If user is admin or super_admin, redirect to their dashboard
       if (currentUser?.role === 'admin' || currentUser?.role === 'super_admin') {
+        console.log('Admin user detected, redirecting to dashboard');
         router.push(`/${currentUser.role}/dashboard`);
         return;
       }
 
-      // Receptionist (user role) can access this page
+      // Receptionist and user can access this page
+      console.log('User/Receptionist access granted to home page');
     }, 300);
 
     return () => clearTimeout(timer);
