@@ -327,7 +327,7 @@ export default function LicenseReportPage() {
                     <div className="border-2 border-gray-300 rounded-lg p-4 h-40 flex items-center justify-center bg-white">
                       {editFormData.company_logo ? (
                         <img 
-                          src={`http://localhost:5000${editFormData.company_logo}`}
+                          src={`${process.env.NEXT_PUBLIC_API_URL_WS}${editFormData.company_logo}`}
                           alt="Company Logo" 
                           className="max-h-full max-w-full object-contain"
                         />

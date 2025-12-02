@@ -289,7 +289,7 @@ export default function CreateServicesPage() {
                     <td className="px-4 py-3 text-sm text-gray-700">
                       {service.logo_url ? (
                         <img 
-                          src={`http://localhost:5000${service.logo_url}`} 
+                          src={`${process.env.NEXT_PUBLIC_API_URL_WS}${service.logo_url}`} 
                           alt={service.service_name}
                           className="w-12 h-12 object-cover rounded"
                         />

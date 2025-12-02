@@ -486,7 +486,7 @@ export default function Home() {
         <div class="ticket">
           <div class="ticket-header">
             <div class="logo-container">
-              ${licenseData?.company_logo ? `<img src="http://localhost:5000${licenseData.company_logo}" alt="Logo" style="max-height: 60px; max-width: 180px; display: block; margin: 0 auto;" />` : 'LOGO'}
+              ${licenseData?.company_logo ? `<img src="${process.env.NEXT_PUBLIC_API_URL_WS}${licenseData.company_logo}" alt="Logo" style="max-height: 60px; max-width: 180px; display: block; margin: 0 auto;" />` : 'LOGO'}
             </div>
           </div>
           <div class="ticket-details">
@@ -671,7 +671,7 @@ export default function Home() {
                   <div className="p-8 flex flex-col items-center justify-center text-white">
                     {service.logo_url ? (
                       <div className="w-24 h-24 mb-4 bg-white/20 rounded-full flex items-center justify-center overflow-hidden">
-                        <img src={`http://localhost:5000${service.logo_url}`} alt={service.service_name} className="w-16 h-16 object-contain" />
+                        <img src={`${process.env.NEXT_PUBLIC_API_URL_WS}${service.logo_url}`} alt={service.service_name} className="w-16 h-16 object-contain" />
                       </div>
                     ) : (
                       <div className="w-24 h-24 mb-4 bg-white/20 rounded-full flex items-center justify-center">
