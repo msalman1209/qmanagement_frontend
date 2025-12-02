@@ -76,14 +76,14 @@ function TicketInfoContent() {
     return () => clearInterval(slideInterval);
   }, []);
 
-  // Fetch called tickets on mount and set up polling
+  // Fetch called tickets on mount and set up optimized polling
   useEffect(() => {
     console.log('🔄 Starting ticket polling...');
     fetchCalledTickets();
     const pollInterval = setInterval(() => {
       console.log('🔃 Polling backend for new tickets...');
       fetchCalledTickets();
-    }, 2000); // Check every 2 seconds
+    }, 3000); // Reduced frequency to 3 seconds to reduce server load
     return () => {
       console.log('⏹️ Stopping ticket polling');
       clearInterval(pollInterval);
@@ -182,8 +182,8 @@ function TicketInfoContent() {
       }
     }
     
-    // Create announcement text
-    const counterText = counterNumber ? ` counter ${counterNumber}` : '';
+    // Create announcement text with proper format
+    const counterText = counterNumber ? ` proceed to counter number ${counterNumber}` : '';
     const text = `Ticket number ${ticketNumber}${counterText}`;
     console.log('Announcing:', text);
     
@@ -224,14 +224,12 @@ function TicketInfoContent() {
     });
     
     if (lastAnnouncedTime && lastAnnouncedTime !== lastVoiceTime && calledTicket && voicesLoaded) {
-      console.log('✅ All conditions met, scheduling voice announcement');
+      console.log('✅ All conditions met, triggering voice announcement immediately');
       setLastVoiceTime(lastAnnouncedTime);
       
-      // Small delay to ensure everything is ready
-      setTimeout(() => {
-        console.log('🎤 Calling announceTicket function');
-        announceTicket(calledTicket, currentCounter);
-      }, 150);
+      // Announce immediately without delay for instant response
+      console.log('🎤 Calling announceTicket function');
+      announceTicket(calledTicket, currentCounter);
     } else {
       if (!lastAnnouncedTime) console.log('⏸️ Waiting: lastAnnouncedTime is null');
       if (lastAnnouncedTime === lastVoiceTime) console.log('⏸️ Skipping: Already announced this ticket');
