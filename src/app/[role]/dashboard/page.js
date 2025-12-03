@@ -677,7 +677,7 @@ export default function UserDashboard() {
               <h1 className="text-[38px] font-semibold text-gray-700">
                 Current Ticket ID:
               </h1>
-              <p className="text-[38px] font-bold text-gray-900">{currentTicket}</p>
+              <p className="text-[38px] uppercase font-bold text-gray-900">{currentTicket}</p>
             </div>
           </div>
 
@@ -812,11 +812,11 @@ export default function UserDashboard() {
                           : 'hover:bg-blue-100'
                       }`}
                     >
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-900">
-                        {ticket.ticketNumber}
+                      <td className="px-6 py-4 uppercase whitespace-nowrap text-sm font-medium text-blue-900">
+                        {ticket.ticketNumber?.toString().toUpperCase()}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {ticket.service}
+                      <td className="px-6 py-4 uppercase whitespace-nowrap text-sm text-gray-900">
+                        {ticket.service?.toUpperCase()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                         {ticket.transfer_by || 'N/A'}
@@ -868,11 +868,11 @@ export default function UserDashboard() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {ticket.id}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {ticket.ticketNumber}
+                      <td className="px-6 py-4 uppercase whitespace-nowrap text-sm font-medium text-gray-900">
+                        {ticket.ticketNumber?.toString().toUpperCase()}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {ticket.service}
+                      <td className="px-6 py-4 uppercase whitespace-nowrap text-sm text-gray-900">
+                        {ticket.service?.toUpperCase()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                         {ticket.submissionTime}
