@@ -26,7 +26,7 @@ export default function ConfigurationPage() {
   const loadSettings = async () => {
     try {
       // Try to load from database
-      const response = await axios.get('http://localhost:5000/api/voices/settings');
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/voices/settings`);
       if (response.data.success && response.data.settings) {
         const settings = response.data.settings;
         const languages = settings.languages ? JSON.parse(settings.languages) : ['en'];
@@ -62,7 +62,7 @@ export default function ConfigurationPage() {
   
   const checkChatterboxService = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/voices/health');
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/voices/health`);
       if (response.data.success) {
         setChatterboxServiceStatus('online');
         loadChatterboxVoices();
@@ -76,7 +76,7 @@ export default function ConfigurationPage() {
   
   const loadChatterboxVoices = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/voices/list');
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/voices/list`);
       console.log('Loaded voices:', response.data);
       if (response.data.success) {
         setChatterboxVoices(response.data.data || []);
@@ -183,7 +183,7 @@ export default function ConfigurationPage() {
       formData.append('voice', file);
       formData.append('name', file.name);
       
-      const response = await axios.post('http://localhost:5000/api/voices/upload', formData, {
+      const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/api/voices/upload`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
@@ -211,7 +211,7 @@ export default function ConfigurationPage() {
     
     try {
       // Save to database
-      const response = await axios.post('http://localhost:5000/api/voices/settings', {
+      const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/api/voices/settings`, {
         voice_type: selectedChatterboxVoice,
         languages: JSON.stringify(selectedLanguages), // Save as JSON array
         speech_rate: speechRate,
@@ -268,7 +268,7 @@ export default function ConfigurationPage() {
 
         console.log(`🌐 Making API request for Box ${i + 1}...`);
         
-        const response = await axios.post('http://localhost:5000/api/voices/synthesize', {
+        const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/api/voices/synthesize`, {
           text: translatedText,
           language: lang,
           rate: speechRate,
