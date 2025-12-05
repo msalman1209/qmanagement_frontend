@@ -1,64 +1,596 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import axios from 'axios';
+
+const API_URL = 'http://localhost:5000/api/counter-display';
 
 export default function CounterDisplayPage() {
+  const [contentType, setContentType] = useState('video'); // 'video' or 'images'
   const [uploadedVideo, setUploadedVideo] = useState(null);
+  const [videoUrl, setVideoUrl] = useState('');
+  const [leftLogo, setLeftLogo] = useState(null);
+  const [leftLogoUrl, setLeftLogoUrl] = useState('');
+  const [rightLogo, setRightLogo] = useState(null);
+  const [rightLogoUrl, setRightLogoUrl] = useState('');
+  const [screenType, setScreenType] = useState('horizontal');
+  const [sliderImages, setSliderImages] = useState([]);
+  const [selectedImages, setSelectedImages] = useState([]);
+  const [sliderTimer, setSliderTimer] = useState(5);
   const [tickerContent, setTickerContent] = useState('Welcome to HAPPINESS LOUNGE BUSINESSMEN SERVICES L.L.C');
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState({ type: '', text: '' });
 
-  const handleVideoUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setUploadedVideo(file);
-      console.log('Video uploaded:', file.name);
+  // Load existing configuration on mount
+  useEffect(() => {
+    fetchConfiguration();
+  }, []);
+
+  const fetchConfiguration = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/config`);
+      if (response.data.success) {
+        const { config, images } = response.data;
+        
+        if (config) {
+          setLeftLogoUrl(config.left_logo_url || '');
+          setRightLogoUrl(config.right_logo_url || '');
+          setScreenType(config.screen_type || 'horizontal');
+          setContentType(config.content_type || 'video');
+          setVideoUrl(config.video_url || '');
+          setSliderTimer(config.slider_timer || 5);
+          setTickerContent(config.ticker_content || 'Welcome to HAPPINESS LOUNGE BUSINESSMEN SERVICES L.L.C');
+        }
+
+        if (images && images.length > 0) {
+          const formattedImages = images.map(img => ({
+            id: img.id,
+            preview: `http://localhost:5000${img.image_url}`,
+            name: img.image_name,
+            file: null
+          }));
+          setSliderImages(formattedImages);
+          
+          const selectedIds = images.filter(img => img.is_selected).map(img => img.id);
+          setSelectedImages(selectedIds);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching configuration:', error);
+      showMessage('error', 'Failed to load configuration');
     }
   };
 
-  const handleUpdateContent = () => {
-    console.log('Update content:', { uploadedVideo, tickerContent });
+  const showMessage = (type, text) => {
+    setMessage({ type, text });
+    setTimeout(() => setMessage({ type: '', text: '' }), 5000);
+  };
+
+  const handleContentTypeChange = (type) => {
+    // Clear existing content when switching
+    if (type === 'video' && sliderImages.length > 0) {
+      if (!confirm('Switching to video will remove all selected images. Continue?')) {
+        return;
+      }
+      setSliderImages([]);
+      setSelectedImages([]);
+    } else if (type === 'images' && uploadedVideo) {
+      if (!confirm('Switching to images will remove the selected video. Continue?')) {
+        return;
+      }
+      setUploadedVideo(null);
+    }
+    setContentType(type);
+  };
+
+  const handleVideoUpload = async (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setUploadedVideo(file);
+      
+      // Upload immediately
+      const formData = new FormData();
+      formData.append('video', file);
+      
+      try {
+        const response = await axios.post(`${API_URL}/upload-video`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        
+        if (response.data.success) {
+          setVideoUrl(response.data.videoUrl);
+          showMessage('success', 'Video uploaded successfully');
+        }
+      } catch (error) {
+        console.error('Error uploading video:', error);
+        showMessage('error', 'Failed to upload video');
+      }
+    }
+  };
+
+  const handleLeftLogoUpload = async (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setLeftLogo(file);
+      
+      // Upload immediately
+      const formData = new FormData();
+      formData.append('logo', file);
+      formData.append('logoType', 'left');
+      
+      try {
+        const response = await axios.post(`${API_URL}/upload-logo`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        
+        if (response.data.success) {
+          setLeftLogoUrl(response.data.logoUrl);
+          showMessage('success', 'Left logo uploaded successfully');
+        }
+      } catch (error) {
+        console.error('Error uploading left logo:', error);
+        showMessage('error', 'Failed to upload left logo');
+      }
+    }
+  };
+
+  const handleRightLogoUpload = async (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setRightLogo(file);
+      
+      // Upload immediately
+      const formData = new FormData();
+      formData.append('logo', file);
+      formData.append('logoType', 'right');
+      
+      try {
+        const response = await axios.post(`${API_URL}/upload-logo`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        
+        if (response.data.success) {
+          setRightLogoUrl(response.data.logoUrl);
+          showMessage('success', 'Right logo uploaded successfully');
+        }
+      } catch (error) {
+        console.error('Error uploading right logo:', error);
+        showMessage('error', 'Failed to upload right logo');
+      }
+    }
+  };
+
+  const handleImagesUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length > 0) {
+      // Upload images to server
+      const formData = new FormData();
+      files.forEach(file => {
+        formData.append('images', file);
+      });
+      
+      try {
+        const response = await axios.post(`${API_URL}/upload-images`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        
+        if (response.data.success) {
+          const uploadedImages = response.data.images.map(img => ({
+            id: img.id,
+            preview: `http://localhost:5000${img.imageUrl}`,
+            name: img.imageName,
+            file: null
+          }));
+          
+          setSliderImages([...sliderImages, ...uploadedImages]);
+          showMessage('success', `${uploadedImages.length} images uploaded successfully`);
+        }
+      } catch (error) {
+        console.error('Error uploading images:', error);
+        showMessage('error', 'Failed to upload images');
+      }
+    }
+  };
+
+  const toggleImageSelection = (imageId) => {
+    setSelectedImages(prev => {
+      if (prev.includes(imageId)) {
+        return prev.filter(id => id !== imageId);
+      } else {
+        return [...prev, imageId];
+      }
+    });
+  };
+
+  const handleUpdateContent = async () => {
+    setLoading(true);
+    
+    try {
+      const payload = {
+        leftLogoUrl,
+        rightLogoUrl,
+        screenType,
+        contentType,
+        videoUrl,
+        sliderTimer,
+        tickerContent,
+        selectedImageIds: selectedImages
+      };
+
+      const response = await axios.post(`${API_URL}/config`, payload);
+      
+      if (response.data.success) {
+        showMessage('success', 'Configuration updated successfully!');
+      }
+    } catch (error) {
+      console.error('Error updating configuration:', error);
+      showMessage('error', 'Failed to update configuration');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="p-8">
+    <div className="p-6 bg-gray-50 min-h-screen">
       <h1 className="text-2xl font-semibold text-gray-700 mb-6">Counter Display Management</h1>
       
-      <div className="bg-white rounded-lg shadow p-6 max-w-3xl">
-        <div className="space-y-6">
-          {/* Upload Video */}
-          <div>
-            <label className="block text-sm font-medium text-gray-600 uppercase mb-2">
-              Upload Video
-            </label>
-            <input
-              type="file"
-              accept="video/*"
-              onChange={handleVideoUpload}
-              className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border file:border-gray-300 file:text-sm file:font-semibold file:bg-white file:text-gray-700 hover:file:bg-gray-50"
-            />
-          </div>
-
-          {/* Ticker Content */}
-          <div>
-            <label className="block text-sm font-medium text-gray-600 uppercase mb-2">
-              Ticker Content
-            </label>
-            <input
-              type="text"
-              value={tickerContent}
-              onChange={(e) => setTickerContent(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none text-gray-700"
-            />
-          </div>
-
-          {/* Update Button */}
-          <div className="pt-4">
-            <button
-              onClick={handleUpdateContent}
-              className="px-8 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition-colors"
-            >
-              Update Content
-            </button>
+      {/* Success/Error Message */}
+      {message.text && (
+        <div className={`mb-4 p-4 rounded-lg ${
+          message.type === 'success' ? 'bg-green-100 border-2 border-green-500 text-green-700' : 'bg-red-100 border-2 border-red-500 text-red-700'
+        }`}>
+          <div className="flex items-center gap-2">
+            {message.type === 'success' ? (
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+            ) : (
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+            )}
+            <span className="font-semibold">{message.text}</span>
           </div>
         </div>
+      )}
+      
+      {/* Top Row: Left Logo, Right Logo, Screen Type */}
+      <div className="grid grid-cols-3 gap-4 mb-4">
+        <div className="bg-white rounded-lg shadow p-4">
+          <label className="block text-xs font-semibold text-gray-600 uppercase mb-2">
+            Left Logo
+          </label>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleLeftLogoUpload}
+            className="w-full text-xs text-gray-500 file:mr-2 file:py-2 file:px-3 file:rounded file:border file:border-gray-300 file:text-xs file:font-semibold file:bg-white file:text-gray-700 hover:file:bg-gray-50"
+          />
+          {(leftLogo || leftLogoUrl) && (
+            <div className="mt-2 p-2 bg-green-50 rounded border border-green-200">
+              <img 
+                src={leftLogo ? URL.createObjectURL(leftLogo) : `http://localhost:5000${leftLogoUrl}`} 
+                alt="Left Logo" 
+                className="h-12 object-contain mx-auto"
+              />
+            </div>
+          )}
+        </div>
+
+        <div className="bg-white rounded-lg shadow p-4">
+          <label className="block text-xs font-semibold text-gray-600 uppercase mb-2">
+            Right Logo
+          </label>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleRightLogoUpload}
+            className="w-full text-xs text-gray-500 file:mr-2 file:py-2 file:px-3 file:rounded file:border file:border-gray-300 file:text-xs file:font-semibold file:bg-white file:text-gray-700 hover:file:bg-gray-50"
+          />
+          {(rightLogo || rightLogoUrl) && (
+            <div className="mt-2 p-2 bg-green-50 rounded border border-green-200">
+              <img 
+                src={rightLogo ? URL.createObjectURL(rightLogo) : `http://localhost:5000${rightLogoUrl}`} 
+                alt="Right Logo" 
+                className="h-12 object-contain mx-auto"
+              />
+            </div>
+          )}
+        </div>
+
+        <div className="bg-white rounded-lg shadow p-4">
+          <label className="block text-xs font-semibold text-gray-600 uppercase mb-2">
+            Screen Type
+          </label>
+          <select
+            value={screenType}
+            onChange={(e) => setScreenType(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none text-gray-700 text-sm"
+          >
+            <option value="horizontal">Horizontal</option>
+            <option value="vertical">Vertical</option>
+          </select>
+          <div className="mt-2 text-xs text-gray-500 text-center">
+            Current: <span className="font-semibold text-green-600">{screenType}</span>
+          </div>
+        </div>
+      </div>
+        <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-lg shadow-md p-5 mb-6 border-2 border-green-200">
+        <label className="block text-base font-bold text-gray-800 mb-3 flex items-center gap-2">
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+          </svg>
+          Select Content Type:
+        </label>
+        <div className="flex gap-8">
+          <label className="flex items-center gap-3 cursor-pointer group">
+            <input
+              type="radio"
+              name="contentType"
+              value="video"
+              checked={contentType === 'video'}
+              onChange={(e) => handleContentTypeChange(e.target.value)}
+              className="w-6 h-6 text-green-600 focus:ring-2 focus:ring-green-500 cursor-pointer"
+            />
+            <span className={`text-lg font-semibold transition-all flex items-center gap-2 ${
+              contentType === 'video' 
+                ? 'text-green-700 scale-105' 
+                : 'text-gray-600 group-hover:text-green-600'
+            }`}>
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+              Video
+            </span>
+            {contentType === 'video' && (
+              <span className="ml-2 px-2 py-1 bg-green-600 text-white text-xs rounded-full animate-pulse">
+                Active
+              </span>
+            )}
+          </label>
+          
+          <label className="flex items-center gap-3 cursor-pointer group">
+            <input
+              type="radio"
+              name="contentType"
+              value="images"
+              checked={contentType === 'images'}
+              onChange={(e) => handleContentTypeChange(e.target.value)}
+              className="w-6 h-6 text-blue-600 focus:ring-2 focus:ring-blue-500 cursor-pointer"
+            />
+            <span className={`text-lg font-semibold transition-all flex items-center gap-2 ${
+              contentType === 'images' 
+                ? 'text-blue-700 scale-105' 
+                : 'text-gray-600 group-hover:text-blue-600'
+            }`}>
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              Images Slider
+            </span>
+            {contentType === 'images' && (
+              <span className="ml-2 px-2 py-1 bg-blue-600 text-white text-xs rounded-full animate-pulse">
+                Active
+              </span>
+            )}
+          </label>
+        </div>
+      </div>
+
+      {/* Main Content Area: Conditional Rendering based on Content Type */}
+      <div className="flex gap-4 mb-4">
+        {/* Video Section - Only show when contentType is 'video' */}
+        {contentType === 'video' && (
+        <div className="flex-1 bg-white rounded-lg shadow p-6">
+          <label className="block text-xs font-semibold text-gray-600 uppercase mb-3">
+            Upload Video
+          </label>
+          <input
+            type="file"
+            accept="video/*"
+            onChange={handleVideoUpload}
+            disabled={sliderImages.length > 0}
+            className={`w-full text-sm text-gray-500 mb-4 file:mr-4 file:py-2 file:px-4 file:rounded file:border file:border-gray-300 file:text-sm file:font-semibold file:bg-white file:text-gray-700 hover:file:bg-gray-50 ${
+              sliderImages.length > 0 ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
+          />
+          {sliderImages.length > 0 && (
+            <div className="mb-2 text-xs text-amber-600 font-medium bg-amber-50 p-2 rounded border border-amber-200">
+              ⚠️ Remove images to upload video
+            </div>
+          )}
+          
+          {/* Video Preview Box */}
+          <div className="border-4 border-dashed border-gray-300 rounded-lg h-80 flex items-center justify-center bg-gray-50">
+            {(uploadedVideo || videoUrl) ? (
+              <video 
+                src={uploadedVideo ? URL.createObjectURL(uploadedVideo) : `http://localhost:5000${videoUrl}`}
+                controls 
+                className="max-h-full max-w-full rounded"
+              >
+                Your browser does not support video playback.
+              </video>
+            ) : (
+              <div className="text-center text-gray-400">
+                <svg className="mx-auto h-16 w-16 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+                <p className="text-lg font-medium">Video Preview</p>
+                <p className="text-sm">Upload a video to see preview</p>
+                {sliderImages.length > 0 && (
+                  <p className="text-xs text-amber-500 mt-2">Video disabled (images selected)</p>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+        )}
+
+
+        {/* Image Section - Only show when contentType is 'images' */}
+        {contentType === 'images' && (
+        <div className="flex-1 bg-white rounded-lg shadow p-6">
+          <h2 className="text-lg font-bold text-blue-700 mb-4 flex items-center gap-2">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            Image Slider Configuration
+          </h2>
+          
+          {/* Timer Input & Upload Images - Same Row */}
+          <div className="flex gap-4 mb-4">
+            {/* Timer Dropdown - Smaller Width */}
+            <div className="w-48">
+              <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-1">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Slider Timer
+              </label>
+              <select
+                value={sliderTimer}
+                onChange={(e) => setSliderTimer(Number(e.target.value))}
+                className="w-full px-4 py-2.5 border-2 border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-gray-700 font-semibold bg-white cursor-pointer"
+              >
+                <option value={1}>1 second</option>
+                <option value={2}>2 seconds</option>
+                <option value={3}>3 seconds</option>
+                <option value={4}>4 seconds</option>
+                <option value={5}>5 seconds</option>
+                <option value={6}>6 seconds</option>
+                <option value={7}>7 seconds</option>
+                <option value={8}>8 seconds</option>
+                <option value={9}>9 seconds</option>
+                <option value={10}>10 seconds</option>
+                <option value={15}>15 seconds</option>
+                <option value={20}>20 seconds</option>
+                <option value={30}>30 seconds</option>
+                <option value={45}>45 seconds</option>
+                <option value={60}>60 seconds</option>
+              </select>
+            </div>
+
+            {/* Upload Images Button - Takes Remaining Space */}
+            <div className="flex-1">
+              <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-1">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+                Upload Images
+              </label>
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleImagesUpload}
+                className="w-full text-sm text-gray-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-2 file:border-blue-300 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                Select multiple files
+              </p>
+            </div>
+          </div>
+
+          {/* Images Preview Grid */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+              <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              Uploaded Images ({sliderImages.length})
+            </label>
+            <div className="border-4 border-dashed border-blue-300 rounded-lg h-96 overflow-y-auto bg-blue-50/30 p-4">
+              {sliderImages.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full text-gray-400">
+                  <svg className="h-20 w-20 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <p className="text-xl font-medium text-gray-500">No images uploaded</p>
+                  <p className="text-sm text-gray-400 mt-1">Upload images to create your slider</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-3 gap-3">
+                  {sliderImages.map((image) => (
+                    <div
+                      key={image.id}
+                      onClick={() => toggleImageSelection(image.id)}
+                      className={`relative rounded-lg overflow-hidden cursor-pointer border-3 transition-all transform hover:scale-105 ${
+                        selectedImages.includes(image.id)
+                          ? 'border-blue-600 ring-4 ring-blue-300 shadow-lg'
+                          : 'border-gray-300 hover:border-blue-400 shadow-md'
+                      }`}
+                    >
+                      <img
+                        src={image.preview}
+                        alt={image.name}
+                        className="w-full h-32 object-cover"
+                      />
+                      {selectedImages.includes(image.id) && (
+                        <div className="absolute inset-0 bg-blue-600/20 flex items-center justify-center">
+                          <div className="bg-blue-600 text-white rounded-full p-2">
+                            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                          </div>
+                        </div>
+                      )}
+                      <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-xs p-1 truncate">
+                        {image.name}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+          
+          {selectedImages.length > 0 && (
+            <div className="mt-3 p-3 text-center bg-blue-100 rounded-lg border-2 border-blue-400">
+              <span className="text-blue-700 font-bold text-lg flex items-center justify-center gap-2">
+                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+                {selectedImages.length} image(s) selected for slider
+              </span>
+            </div>
+          )}
+        </div>
+        )}
+      </div>
+
+      {/* Bottom: Ticker Content */}
+      <div className="bg-white rounded-lg shadow p-4 mb-4">
+        <label className="block text-xs font-semibold text-gray-600 uppercase mb-2">
+          Ticker Content
+        </label>
+        <input
+          type="text"
+          value={tickerContent}
+          onChange={(e) => setTickerContent(e.target.value)}
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none text-gray-700"
+        />
+      </div>
+
+      {/* Update Button */}
+      <div className="text-center">
+        <button
+          onClick={handleUpdateContent}
+          disabled={loading}
+          className={`px-12 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold transition-colors shadow-lg flex items-center gap-2 mx-auto ${
+            loading ? 'opacity-50 cursor-not-allowed' : ''
+          }`}
+        >
+          {loading ? (
+            <>
+              <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Updating...
+            </>
+          ) : (
+            'Update Content'
+          )}
+        </button>
       </div>
     </div>
   );

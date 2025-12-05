@@ -17,6 +17,16 @@ function TicketInfoContent() {
   const [isAnnouncing, setIsAnnouncing] = useState(false); // Prevent overlapping announcements
   const [announcementQueue, setAnnouncementQueue] = useState([]); // Queue for pending tickets
   const [broadcastChannel, setBroadcastChannel] = useState(null);
+  
+  // Counter Display Config from database
+  const [leftLogoUrl, setLeftLogoUrl] = useState('');
+  const [rightLogoUrl, setRightLogoUrl] = useState('');
+  const [contentType, setContentType] = useState('video');
+  const [videoUrl, setVideoUrl] = useState('');
+  const [sliderImages, setSliderImages] = useState([]);
+  const [sliderTimer, setSliderTimer] = useState(5);
+  const [tickerContent, setTickerContent] = useState('Welcome to Dubai Economic Department Services');
+  
   const slides = ['/assets/img/33.png', '/assets/img/22.png', '/assets/img/11.png'];
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
@@ -127,20 +137,54 @@ function TicketInfoContent() {
     }
   };
 
-  // Auto-slide functionality
-  useEffect(() => {
-    const slideInterval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % slides.length);
-    }, 9000);
+  // Fetch counter display configuration from database
+  const fetchDisplayConfig = async () => {
+    try {
+      const response = await axios.get(`${apiUrl}/counter-display/config`);
+      if (response.data.success) {
+        const { config, images } = response.data;
+        
+        if (config) {
+          setLeftLogoUrl(config.left_logo_url || '');
+          setRightLogoUrl(config.right_logo_url || '');
+          setContentType(config.content_type || 'video');
+          setVideoUrl(config.video_url || '');
+          setSliderTimer(config.slider_timer || 5);
+          setTickerContent(config.ticker_content || 'Welcome to Dubai Economic Department Services');
+          
+          console.log('✅ Display config loaded:', config);
+        }
+        
+        // Load selected images for slider
+        if (images && images.length > 0) {
+          const selectedImages = images.filter(img => img.is_selected === 1);
+          setSliderImages(selectedImages.map(img => `http://localhost:5000${img.image_url}`));
+          console.log('✅ Slider images loaded:', selectedImages.length);
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error fetching display config:', error);
+    }
+  };
 
-    return () => clearInterval(slideInterval);
-  }, []);
+  // Auto-slide functionality for images
+  useEffect(() => {
+    if (contentType === 'images' && sliderImages.length > 0) {
+      const slideInterval = setInterval(() => {
+        setCurrentSlide((prev) => (prev + 1) % sliderImages.length);
+      }, sliderTimer * 1000);
+      return () => clearInterval(slideInterval);
+    }
+  }, [contentType, sliderImages, sliderTimer]);
 
   // Fetch called tickets on mount and set up polling
   useEffect(() => {
     console.log('🔄 Starting ticket polling...');
     console.log('🔧 API URL:', apiUrl);
     console.log('🔧 Full endpoint:', `${apiUrl}/user/called-tickets`);
+    
+    // Fetch display config on mount
+    fetchDisplayConfig();
     
     fetchCalledTickets();
     const pollInterval = setInterval(() => {
@@ -542,21 +586,52 @@ function TicketInfoContent() {
                   counter: t.counter_no
                 })));
                 
-                return Array.from(new Map(
+                // Get unique tickets and sort: current calling ticket at top
+                const uniqueTickets = Array.from(new Map(
                   filteredForDisplay.map(item => [item.ticket_number, item])
-                ).values())
-                  .slice(-10)
-                  .reverse()
-                  .map((item, index) => (
-                  <tr key={index} className="border-b-1 border-[#e6e9ec]">
-                    <td className="bg-white text-black text-[60px] text-center align-middle lg:text-[4vw] md:text-[5vw] sm:text-[7vw]">
-                      {item.ticket_number}
-                    </td>
-                    <td className="bg-white text-black text-[60px] text-center align-middle lg:text-[3vw] md:text-[5vw] sm:text-[7vw]">
-                      {item.counter_no || 'N/A'}
-                    </td>
-                  </tr>
-                ));
+                ).values());
+                
+                // Normalize ticket numbers for comparison (remove spaces, lowercase)
+                const normalizeTicket = (ticket) => {
+                  return ticket ? String(ticket).toLowerCase().trim() : '';
+                };
+                
+                const currentTicketNormalized = normalizeTicket(calledTicket);
+                
+                console.log('🎯 Current calling ticket (normalized):', currentTicketNormalized);
+                console.log('🎯 All tickets in table:', uniqueTickets.map(t => normalizeTicket(t.ticket_number)));
+                
+                // Sort: current calling ticket first, then rest by time
+                const sortedTickets = uniqueTickets.sort((a, b) => {
+                  const aNormalized = normalizeTicket(a.ticket_number);
+                  const bNormalized = normalizeTicket(b.ticket_number);
+                  
+                  // If this is the currently calling ticket, move to top
+                  if (aNormalized === currentTicketNormalized) return -1;
+                  if (bNormalized === currentTicketNormalized) return 1;
+                  // Otherwise sort by called_at (newest first)
+                  return new Date(b.called_at) - new Date(a.called_at);
+                });
+                
+                return sortedTickets
+                  .slice(0, 10) // Show top 10
+                  .map((item, index) => {
+                    // Highlight the currently calling ticket (case-insensitive comparison)
+                    const isCurrentTicket = normalizeTicket(item.ticket_number) === currentTicketNormalized;
+                    const bgColor = isCurrentTicket ? 'bg-yellow-200' : 'bg-white';
+                    const textWeight = isCurrentTicket ? 'font-bold' : 'font-bold';
+                    
+                    return (
+                      <tr key={index} className={`border-b-1 border-[#e6e9ec] ${isCurrentTicket ? 'animate-pulse' : ''}`}>
+                        <td className={`${bgColor} text-black uppercase text-[60px] text-center align-middle ${textWeight} lg:text-[4vw] md:text-[5vw] sm:text-[7vw]`}>
+                          {item.ticket_number}
+                        </td>
+                        <td className={`${bgColor} text-black text-[60px] text-center align-middle ${textWeight} lg:text-[3vw] md:text-[5vw] sm:text-[7vw]`}>
+                          {item.counter_no || 'N/A'}
+                        </td>
+                      </tr>
+                    );
+                  });
               })()
             )}
           </tbody>
@@ -567,13 +642,24 @@ function TicketInfoContent() {
       <div className="flex-[0_0_70%] flex flex-col">
         {/* Header Section */}
         <div className="w-full flex justify-around items-center bg-white/95 shadow-lg h-[200px] border-b border-gray-300">
+          {/* Left Logo - Dynamic from database */}
           <div className="flex-[0_0_25%] text-center">
-            <img
-              src="https://ded.techsolutionor.com/assets/img/logo/DEDpreview.png"
-              alt="Logo"
-              className="w-[150px] h-[100px] mx-auto"
-            />
+            {leftLogoUrl ? (
+              <img
+                src={`http://localhost:5000${leftLogoUrl}`}
+                alt="Left Logo"
+                className="w-[150px] h-[100px] mx-auto object-contain"
+              />
+            ) : (
+              <img
+                src="https://ded.techsolutionor.com/assets/img/logo/DEDpreview.png"
+                alt="Logo"
+                className="w-[150px] h-[100px] mx-auto object-contain"
+              />
+            )}
           </div>
+          
+          {/* Now Calling Section */}
           <div className="flex-[0_0_50%] text-center border-l-[5px] border-r-[5px] border-gray-300">
             <div className="text-black font-bold text-[40px]">
               <b className="text-red-600 text-[50px]">Now Calling</b>
@@ -587,32 +673,70 @@ function TicketInfoContent() {
               )}
             </div>
           </div>
-          <div className="flex-[0_0_25%] text-right">
-            <img
-              src="https://epbc.techsolutionor.com/assets/img/logo/image-removebg-preview.png"
-              alt="Logo"
-              className="w-[200px] h-auto mr-8 mb-1"
-            />
+          
+          {/* Right Logo - Dynamic from database */}
+          <div className="flex-[0_0_25%] text-center">
+            {rightLogoUrl ? (
+              <img
+                src={`http://localhost:5000${rightLogoUrl}`}
+                alt="Right Logo"
+                className="w-[150px] h-[100px] mx-auto object-contain"
+              />
+            ) : (
+              <img
+                src="https://epbc.techsolutionor.com/assets/img/logo/image-removebg-preview.png"
+                alt="Logo"
+                className="w-[150px] h-[100px] mx-auto object-contain"
+              />
+            )}
           </div>
         </div>
 
-        {/* Image Slider */}
-        <div className="relative w-full h-[calc(100%-15vh)] rounded-lg overflow-hidden mb-0">
-          {slides.map((slide, index) => (
-            <div
-              key={index}
-              className={`absolute inset-0 transition-opacity duration-1000 ${
-                index === currentSlide ? 'opacity-100' : 'opacity-0'
-              }`}
-            >
-              <img src={slide} alt={`Slide ${index + 1}`} className="w-full h-full object-cover" />
-            </div>
-          ))}
+        {/* Content Area - Video or Image Slider */}
+        <div className="relative w-full h-[calc(100%-15vh)] rounded-lg overflow-hidden mb-0 bg-white">
+          {contentType === 'video' && videoUrl ? (
+            // Video Display
+            <video
+              src={`http://localhost:5000${videoUrl}`}
+              className="w-full h-full object-contain"
+              autoPlay
+              loop
+              muted
+            />
+          ) : contentType === 'images' && sliderImages.length > 0 ? (
+            // Image Slider Display
+            <>
+              {sliderImages.map((slide, index) => (
+                <div
+                  key={index}
+                  className={`absolute inset-0 transition-opacity duration-1000 ${
+                    index === currentSlide ? 'opacity-100' : 'opacity-0'
+                  }`}
+                >
+                  <img src={slide} alt={`Slide ${index + 1}`} className="w-full h-full object-contain" />
+                </div>
+              ))}
+            </>
+          ) : (
+            // Fallback to default slides if no config
+            <>
+              {slides.map((slide, index) => (
+                <div
+                  key={index}
+                  className={`absolute inset-0 transition-opacity duration-1000 ${
+                    index === currentSlide ? 'opacity-100' : 'opacity-0'
+                  }`}
+                >
+                  <img src={slide} alt={`Slide ${index + 1}`} className="w-full h-full object-contain" />
+                </div>
+              ))}
+            </>
+          )}
         </div>
 
-        {/* News Ticker */}
+        {/* News Ticker - Dynamic from database */}
         <div className="w-full bg-[#333] text-white p-4 text-center text-[3vh] font-bold h-[8vh] flex items-center justify-center">
-          <marquee>Welcome to Dubai Economic Department Services</marquee>
+          <marquee>{tickerContent}</marquee>
         </div>
       </div>
 
