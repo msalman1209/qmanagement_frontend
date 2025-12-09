@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, Suspense } from 'react';
 import Image from 'next/image';
-import axios from 'axios';
+import axios from '@/utils/axiosInstance';
 import { useRouter } from 'next/navigation';
 import ProtectedRoute from '@/Components/ProtectedRoute';
 import { getToken, getUser } from '@/utils/sessionStorage';
@@ -85,18 +85,22 @@ function TicketInfoContent() {
             counter: t.counter_no
           })));
           
-          // Filter: ONLY show tickets with 'called' status (case-insensitive)
-          // Exclude: unattended, solved, not_solved
+          // Filter: ONLY show tickets with 'called' status AND valid counter_no
+          // Exclude: NULL counters, unattended, solved, not_solved
           const calledOnlyTickets = data.tickets.filter(ticket => 
-            ticket.status && ticket.status.toLowerCase() === 'called'
+            ticket.status && 
+            ticket.status.toLowerCase() === 'called' &&
+            ticket.counter_no !== null &&
+            ticket.counter_no !== undefined &&
+            ticket.counter_no !== ''
           );
           
-          console.log('✅ FILTERED tickets (status === "called"):', calledOnlyTickets.map(t => ({
+          console.log('✅ FILTERED tickets (status=called + valid counter):', calledOnlyTickets.map(t => ({
             ticket: t.ticket_number,
             status: t.status,
             counter: t.counter_no
           })));
-          console.log(`📊 Total: ${data.tickets.length} tickets, Filtered: ${calledOnlyTickets.length} called tickets`);
+          console.log(`📊 Total: ${data.tickets.length} tickets, Filtered: ${calledOnlyTickets.length} valid tickets`);
           
           setCalledTickets(calledOnlyTickets);
           
@@ -162,7 +166,18 @@ function TicketInfoContent() {
   // Fetch counter display configuration from database
   const fetchDisplayConfig = async () => {
     try {
-      const response = await axios.get(`${apiUrl}/counter-display/config`);
+      const token = getToken();
+      if (!token) {
+        console.warn('⚠️ No token found - cannot fetch display config');
+        return;
+      }
+
+      const response = await axios.get(`${apiUrl}/counter-display/config`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
       if (response.data.success) {
         const { config, images } = response.data;
         

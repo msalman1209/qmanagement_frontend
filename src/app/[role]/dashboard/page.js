@@ -1,8 +1,8 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import axios from 'axios';
-import { getToken } from '@/utils/sessionStorage';
+import axios from '@/utils/axiosInstance';
+import { getToken, getUser } from '@/utils/sessionStorage';
 
 export default function UserDashboard() {
   const router = useRouter();
@@ -26,14 +26,62 @@ export default function UserDashboard() {
   const [transferredTickets, setTransferredTickets] = useState([]);
   const [showCalledDrawer, setShowCalledDrawer] = useState(false);
   const [calledTickets, setCalledTickets] = useState([]);
+  const [userCounter, setUserCounter] = useState(null);
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
   
   console.log('🔵 Dashboard states:', { 
     currentTicket, 
     unassignedCount: unassignedTickets.length, 
-    transferredCount: transferredTickets.length 
+    transferredCount: transferredTickets.length,
+    userCounter 
   });
+
+  // ✅ Check counter on mount - CRITICAL for ticket calling
+  useEffect(() => {
+    const checkUserCounter = async () => {
+      const token = getToken();
+      const user = getUser();
+      
+      if (!token || !user) {
+        console.error('❌ No token or user found - redirecting to login');
+        router.push('/login');
+        return;
+      }
+
+      try {
+        // Try to fetch user's active session counter from API
+        const response = await axios.get(`${apiUrl}/user/session/counter`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        if (response.data.success && response.data.counter_no) {
+          setUserCounter(response.data.counter_no);
+          console.log('✅ User counter verified from API:', response.data.counter_no);
+        } else {
+          // API returned success but no counter - check user object
+          if (user.counter_no) {
+            setUserCounter(user.counter_no);
+            console.log('⚠️ API has no counter, using user object:', user.counter_no);
+          } else {
+            console.warn('⚠️ No counter found - user may not be able to call tickets');
+          }
+        }
+      } catch (error) {
+        console.warn('⚠️ Counter check API failed, using user object:', error.message);
+        // If API doesn't exist or fails, check from user object
+        if (user.counter_no) {
+          setUserCounter(user.counter_no);
+          console.log('✅ Counter from user object:', user.counter_no);
+        } else {
+          console.warn('⚠️ No counter in user object - tickets may not be callable');
+          // DON'T block access - let backend handle validation on call
+        }
+      }
+    };
+
+    checkUserCounter();
+  }, [router, apiUrl]);
 
   const fetchAssignedTickets = async (showLoader = false) => {
     const token = getToken();
@@ -292,6 +340,17 @@ export default function UserDashboard() {
         
       } catch (error) {
         console.error('[UserDashboard] Error calling ticket:', error);
+        
+        // Handle specific error: No counter assigned
+        if (error.response?.data?.no_counter) {
+          alert(error.response.data.message);
+          // Redirect to login to select counter
+          sessionStorage.clear();
+          router.push('/login');
+        } else {
+          // Generic error
+          alert(`❌ Failed to call ticket: ${error.response?.data?.message || error.message}`);
+        }
       } finally {
         // Re-enable button after 2 seconds
         setTimeout(() => setIsCalling(false), 2000);

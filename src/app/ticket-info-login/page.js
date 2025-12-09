@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import axios from 'axios';
+import axios from '@/utils/axiosInstance';
 import { setSessionData } from '@/utils/sessionStorage';
 import { useAppDispatch } from '@/store/hooks';
 import { setCredentials } from '@/store';
@@ -54,16 +54,14 @@ export default function TicketInfoLogin() {
           user,
           token
         }));
-        console.log('✅ Session data and Redux store updated successfully');
-
-        console.log('🚀 Redirecting to /ticket_info...');
-        // Redirect to ticket_info page
-        await router.push('/ticket_info');
         
-        // Fallback: Force redirect if router.push doesn't work
-        setTimeout(() => {
-          window.location.href = '/ticket_info';
-        }, 100);
+        console.log('✅ Session stored. Redirecting...');
+        
+        // Important: Set loading to false before redirect
+        setLoading(false);
+        
+        // Immediate synchronous redirect
+        window.location.href = '/ticket_info';
       } else {
         console.log('❌ Login failed:', response.data.message);
         setError(response.data.message || 'Login failed');

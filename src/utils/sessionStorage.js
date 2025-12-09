@@ -1,56 +1,38 @@
-// Session storage utilities for tab-specific authentication
+// Session storage utilities for authentication
 
-// Get unique tab ID
-export const getTabId = () => {
-  if (typeof window === 'undefined') return null
-  
-  let tabId = sessionStorage.getItem('tabId')
-  if (!tabId) {
-    tabId = `tab_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-    sessionStorage.setItem('tabId', tabId)
-  }
-  return tabId
-}
-
-// Get tab-specific storage key
-export const getStorageKey = (key) => {
-  const tabId = getTabId()
-  return tabId ? `${key}_${tabId}` : key
-}
-
-// Get token from session storage (tab-specific)
+// Get token from session storage
 export const getToken = () => {
   if (typeof window === 'undefined') return null
-  return sessionStorage.getItem(getStorageKey('token'))
+  return sessionStorage.getItem('auth_token')
 }
 
-// Get user from session storage (tab-specific)
+// Get user from session storage
 export const getUser = () => {
   if (typeof window === 'undefined') return null
-  const userStr = sessionStorage.getItem(getStorageKey('user'))
+  const userStr = sessionStorage.getItem('auth_user')
   return userStr ? JSON.parse(userStr) : null
 }
 
-// Check if authenticated in current tab
+// Check if authenticated
 export const isAuthenticated = () => {
   if (typeof window === 'undefined') return false
-  return sessionStorage.getItem(getStorageKey('isAuthenticated')) === 'true'
+  return sessionStorage.getItem('auth_token') !== null
 }
 
-// Set session data (tab-specific)
+// Set session data
 export const setSessionData = (token, user) => {
   if (typeof window === 'undefined') return
   
-  sessionStorage.setItem(getStorageKey('token'), token)
-  sessionStorage.setItem(getStorageKey('user'), JSON.stringify(user))
-  sessionStorage.setItem(getStorageKey('isAuthenticated'), 'true')
+  sessionStorage.setItem('auth_token', token)
+  sessionStorage.setItem('auth_user', JSON.stringify(user))
+  console.log('✅ Session data saved:', { token: token.substring(0, 20) + '...', user: user.username })
 }
 
-// Clear session data (tab-specific)
+// Clear session data
 export const clearSessionData = () => {
   if (typeof window === 'undefined') return
   
-  sessionStorage.removeItem(getStorageKey('token'))
-  sessionStorage.removeItem(getStorageKey('user'))
-  sessionStorage.removeItem(getStorageKey('isAuthenticated'))
+  sessionStorage.removeItem('auth_token')
+  sessionStorage.removeItem('auth_user')
+  console.log('🧹 Session data cleared')
 }

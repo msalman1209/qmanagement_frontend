@@ -60,11 +60,16 @@ const authSlice = createSlice({
       console.log('👤 User role:', user.role)
       console.log('🎫 Token set:', !!token)
       
-      // Store in sessionStorage (tab-specific)
+      // Store in sessionStorage - USE SIMPLE KEYS for compatibility
       if (typeof window !== 'undefined') {
+        // Simple keys that sessionStorage.js can read
+        sessionStorage.setItem('auth_token', token)
+        sessionStorage.setItem('auth_user', JSON.stringify(user))
+        sessionStorage.setItem('isAuthenticated', 'true')
+        
+        // Also keep tab-specific for Redux state
         sessionStorage.setItem(getStorageKey('token'), token)
         sessionStorage.setItem(getStorageKey('user'), JSON.stringify(user))
-        sessionStorage.setItem(getStorageKey('isAuthenticated'), 'true')
         
         // Set cookies for middleware - CRITICAL for page refresh
         setCookie('isAuthenticated', 'true', 7)
@@ -72,7 +77,7 @@ const authSlice = createSlice({
         setCookie(`token_${state.tabId}`, token, 7)
         
         console.log('🍪 Cookies set for role:', user.role)
-        console.log('💾 SessionStorage saved')
+        console.log('💾 SessionStorage saved with auth_token key')
       }
     },
     
@@ -84,8 +89,14 @@ const authSlice = createSlice({
       state.isAuthenticated = false
       state.error = null
       
-      // Clear sessionStorage (tab-specific)
+      // Clear sessionStorage - both simple and tab-specific keys
       if (typeof window !== 'undefined') {
+        // Clear simple keys
+        sessionStorage.removeItem('auth_token')
+        sessionStorage.removeItem('auth_user')
+        sessionStorage.removeItem('isAuthenticated')
+        
+        // Clear tab-specific keys
         sessionStorage.removeItem(getStorageKey('token'))
         sessionStorage.removeItem(getStorageKey('user'))
         sessionStorage.removeItem(getStorageKey('isAuthenticated'))
@@ -96,6 +107,8 @@ const authSlice = createSlice({
         if (currentTabId) {
           deleteCookie(`token_${currentTabId}`)
         }
+        
+        console.log('🧹 Session cleared - logout')
       }
     },
     
@@ -133,12 +146,20 @@ const authSlice = createSlice({
         console.log('👤 Restoring user role:', user.role)
         console.log('🎫 Token restored:', !!token)
         
-        // Ensure cookies are set - CRITICAL for middleware on page refresh
-        setCookie('isAuthenticated', 'true', 7)
-        setCookie('userRole', user.role, 7)
-        setCookie(`token_${state.tabId}`, token, 7)
-        
-        console.log('🍪 Cookies restored for role:', user.role)
+        // Store in sessionStorage - USE SIMPLE KEYS
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem('auth_token', token)
+          sessionStorage.setItem('auth_user', JSON.stringify(user))
+          sessionStorage.setItem('isAuthenticated', 'true')
+          
+          // Ensure cookies are set - CRITICAL for middleware on page refresh
+          setCookie('isAuthenticated', 'true', 7)
+          setCookie('userRole', user.role, 7)
+          setCookie(`token_${state.tabId}`, token, 7)
+          
+          console.log('🍪 Cookies restored for role:', user.role)
+          console.log('💾 Auth restored with auth_token key')
+        }
       }
     },
   },

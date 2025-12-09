@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { FaEye, FaSignOutAlt, FaPlus, FaUser, FaEnvelope, FaLock, FaUserTag, FaTimes } from 'react-icons/fa';
-import axios from 'axios';
+import axios from '@/utils/axiosInstance';
 import { getToken } from '@/utils/sessionStorage';
 
 export default function UserManagementPage({ adminId }) {

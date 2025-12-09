@@ -1,9 +1,11 @@
 'use client';
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import { useRouter } from 'next/navigation';
+import axios from '@/utils/axiosInstance';
 import { getToken } from '@/utils/sessionStorage';
 
 export default function CreateServicesPage({ adminId }) {
+  const router = useRouter();
   const [serviceNameEnglish, setServiceNameEnglish] = useState('');
   const [serviceNameArabic, setServiceNameArabic] = useState('');
   const [initialTicket, setInitialTicket] = useState('');
@@ -21,12 +23,23 @@ export default function CreateServicesPage({ adminId }) {
 
   // Fetch all services on component mount
   useEffect(() => {
+    const token = getToken();
+    if (!token) {
+      console.warn('⚠️ No token available, redirecting to login');
+      router.push('/login');
+      return;
+    }
     fetchServices();
-  }, [adminId]);
+  }, [adminId, router]);
 
   const fetchServices = async () => {
     try {
       const token = getToken();
+      if (!token) {
+        console.warn('⚠️ No token available, skipping fetchServices');
+        return;
+      }
+      
       // If adminId is provided, fetch services for that admin, otherwise fetch all
       const url = adminId 
         ? `${process.env.NEXT_PUBLIC_API_URL}/services/admin/${adminId}`

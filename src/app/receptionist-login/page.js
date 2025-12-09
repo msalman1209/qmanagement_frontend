@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import axios from 'axios';
+import axios from '@/utils/axiosInstance';
 import { setSessionData } from '@/utils/sessionStorage';
 import { useAppDispatch } from '@/store/hooks';
 import { setCredentials } from '@/store';

@@ -1,11 +1,13 @@
 'use client';
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import { useRouter } from 'next/navigation';
+import axios from '@/utils/axiosInstance';
 import { getToken, getUser } from '@/utils/sessionStorage';
 
 const API_URL = 'http://localhost:5000/api/counter-display';
 
 export default function CounterDisplayPage({ adminId }) {
+  const router = useRouter();
   // Get current user from session
   const currentUser = getUser();
   const [contentType, setContentType] = useState('video'); // 'video' or 'images'
@@ -42,6 +44,13 @@ export default function CounterDisplayPage({ adminId }) {
 
   // Load existing configuration on mount
   useEffect(() => {
+    const token = getToken();
+    if (!token) {
+      console.warn('⚠️ No token available, redirecting to login');
+      router.push('/login');
+      return;
+    }
+    
     fetchConfiguration();
     const effectiveAdminId = adminId || currentUser?.id;
     if (effectiveAdminId) {

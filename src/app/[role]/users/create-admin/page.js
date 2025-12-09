@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { FaUser, FaEnvelope, FaLock, FaUserShield, FaBuilding, FaEdit, FaTrash, FaPlus, FaTimes } from 'react-icons/fa';
-import axios from 'axios';
+import axios from '@/utils/axiosInstance';
 
 export default function CreateAdminPage() {
   const [admins, setAdmins] = useState([]);

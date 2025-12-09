@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import axios from '@/utils/axiosInstance';
 import { getToken } from '@/utils/sessionStorage';
 
 export default function ConfigurationPage({ adminId }) {

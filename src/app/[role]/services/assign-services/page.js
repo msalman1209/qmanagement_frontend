@@ -1,9 +1,11 @@
 'use client';
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import { useRouter } from 'next/navigation';
+import axios from '@/utils/axiosInstance';  // Use centralized axios instance
 import { getToken } from '@/utils/sessionStorage';
 
 export default function AssignServicesPage({ adminId }) {
+  const router = useRouter();
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [selectedServices, setSelectedServices] = useState([]);
   const [users, setUsers] = useState([]);
@@ -13,22 +15,27 @@ export default function AssignServicesPage({ adminId }) {
   const [showUserDropdown, setShowUserDropdown] = useState(false);
 
   useEffect(() => {
+    // Check if user is authenticated
+    const token = getToken();
+    if (!token) {
+      console.warn('⚠️ No token available, redirecting to login');
+      router.push('/login');
+      return;
+    }
+
     fetchUsers();
     fetchServices();
     fetchAssignedServices();
-  }, [adminId]);
+  }, [adminId, router]);
 
   const fetchUsers = async () => {
     try {
-      const token = getToken();
-      // If adminId provided, fetch users for that admin, otherwise fetch all
+      // Axios interceptor will automatically add token
       const url = adminId 
-        ? `${process.env.NEXT_PUBLIC_API_URL}/users/admin/${adminId}`
-        : `${process.env.NEXT_PUBLIC_API_URL}/users/all`;
+        ? `/users/admin/${adminId}`
+        : `/users/all`;
         
-      const response = await axios.get(url, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await axios.get(url);
       if (response.data.success) {
         setUsers(response.data.data);
       }
@@ -39,15 +46,12 @@ export default function AssignServicesPage({ adminId }) {
 
   const fetchServices = async () => {
     try {
-      const token = getToken();
-      // If adminId provided, fetch services for that admin, otherwise fetch all
+      // Axios interceptor will automatically add token
       const url = adminId 
-        ? `${process.env.NEXT_PUBLIC_API_URL}/services/admin/${adminId}`
-        : `${process.env.NEXT_PUBLIC_API_URL}/services/all`;
+        ? `/services/admin/${adminId}`
+        : `/services/all`;
         
-      const response = await axios.get(url, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await axios.get(url);
       if (response.data.success) {
         setServices(response.data.data);
       }
@@ -58,15 +62,12 @@ export default function AssignServicesPage({ adminId }) {
 
   const fetchAssignedServices = async () => {
     try {
-      const token = getToken();
-      // If adminId provided, fetch assigned services for that admin
+      // Axios interceptor will automatically add token
       const url = adminId
-        ? `${process.env.NEXT_PUBLIC_API_URL}/services/assigned/admin/${adminId}`
-        : `${process.env.NEXT_PUBLIC_API_URL}/services/assigned`;
+        ? `/services/assigned/admin/${adminId}`
+        : `/services/assigned`;
         
-      const response = await axios.get(url, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await axios.get(url);
       if (response.data.success) {
         setAssignedServices(response.data.data);
       }
@@ -110,16 +111,11 @@ export default function AssignServicesPage({ adminId }) {
 
   const loadCommonServices = async (userIds) => {
     try {
-      const token = getToken();
+      // Axios interceptor will automatically add token
       
       // Fetch services for all selected users
       const promises = userIds.map(userId =>
-        axios.get(
-          `${process.env.NEXT_PUBLIC_API_URL}/services/user/${userId}`,
-          {
-            headers: { Authorization: `Bearer ${token}` }
-          }
-        )
+        axios.get(`/services/user/${userId}`)
       );
 
       const responses = await Promise.all(promises);
@@ -160,7 +156,7 @@ export default function AssignServicesPage({ adminId }) {
 
     setLoading(true);
     try {
-      const token = getToken();
+      // Axios interceptor will automatically add token
       
       // Assign services to multiple users
       const promises = selectedUsers.map(userId => {
@@ -175,11 +171,8 @@ export default function AssignServicesPage({ adminId }) {
         }
         
         return axios.post(
-          `${process.env.NEXT_PUBLIC_API_URL}/services/assign`,
-          payload,
-          {
-            headers: { Authorization: `Bearer ${token}` }
-          }
+          '/services/assign',
+          payload
         );
       });
 
@@ -203,13 +196,8 @@ export default function AssignServicesPage({ adminId }) {
     }
 
     try {
-      const token = getToken();
-      const response = await axios.delete(
-        `${process.env.NEXT_PUBLIC_API_URL}/services/assigned/${userId}`,
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      );
+      // Axios interceptor will automatically add token
+      const response = await axios.delete(`/services/assigned/${userId}`);
 
       if (response.data.success) {
         alert('All services removed successfully!');
