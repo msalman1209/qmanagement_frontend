@@ -26,15 +26,15 @@ const deleteCookie = (name) => {
 // Get token from localStorage (primary) or cookie (fallback)
 export const getToken = () => {
   if (typeof window === 'undefined') return null
-  return localStorage.getItem('auth_token') || getCookie('auth_token')
+  return localStorage.getItem('token') || getCookie('token')
 }
 
 // Get user from localStorage (primary) or cookie (fallback)
 export const getUser = () => {
   if (typeof window === 'undefined') return null
-  let userStr = localStorage.getItem('auth_user')
+  let userStr = localStorage.getItem('user')
   if (!userStr) {
-    userStr = getCookie('auth_user')
+    userStr = getCookie('user')
   }
   return userStr ? JSON.parse(decodeURIComponent(userStr)) : null
 }
@@ -42,7 +42,7 @@ export const getUser = () => {
 // Check if authenticated
 export const isAuthenticated = () => {
   if (typeof window === 'undefined') return false
-  return !!(localStorage.getItem('auth_token') || getCookie('auth_token'))
+  return !!(localStorage.getItem('token') || getCookie('token'))
 }
 
 // Set session data - localStorage + cookies for 1 week persistence
@@ -50,12 +50,12 @@ export const setSessionData = (token, user) => {
   if (typeof window === 'undefined') return
   
   // Store in localStorage
-  localStorage.setItem('auth_token', token)
-  localStorage.setItem('auth_user', JSON.stringify(user))
+  localStorage.setItem('token', token)
+  localStorage.setItem('user', JSON.stringify(user))
   
   // Also store in cookies as backup (1 week expiry)
-  setCookie('auth_token', token, 7)
-  setCookie('auth_user', encodeURIComponent(JSON.stringify(user)), 7)
+  setCookie('token', token, 7)
+  setCookie('user', encodeURIComponent(JSON.stringify(user)), 7)
   
   console.log('✅ Session data saved (localStorage + cookies):', { 
     token: token.substring(0, 20) + '...', 
@@ -68,12 +68,16 @@ export const clearSessionData = () => {
   if (typeof window === 'undefined') return
   
   // Clear localStorage
-  localStorage.removeItem('auth_token')
-  localStorage.removeItem('auth_user')
+  localStorage.removeItem('token')
+  localStorage.removeItem('user')
+  localStorage.removeItem('isAuthenticated')
+  localStorage.removeItem('role')
   
   // Clear cookies
-  deleteCookie('auth_token')
-  deleteCookie('auth_user')
+  deleteCookie('token')
+  deleteCookie('user')
+  deleteCookie('isAuthenticated')
+  deleteCookie('userRole')
   
   console.log('🧹 Session data cleared from localStorage and cookies')
 }

@@ -63,44 +63,44 @@ const authSlice = createSlice({
       // Store in localStorage for 1 week persistence
       if (typeof window !== 'undefined') {
         // Simple keys that sessionStorage.js can read
-        localStorage.setItem('auth_token', token)
-        localStorage.setItem('auth_user', JSON.stringify(user))
+        localStorage.setItem('token', token)
+        localStorage.setItem('user', JSON.stringify(user))
         localStorage.setItem('isAuthenticated', 'true')
         
         // Set cookies for middleware - CRITICAL for page refresh (1 week)
         setCookie('isAuthenticated', 'true', 7)
         setCookie('userRole', user.role, 7)
-        setCookie('auth_token', token, 7)
-        setCookie(`token_${state.tabId}`, token, 7)
+        setCookie('token', token, 7)
         
         console.log('🍪 Cookies set for role:', user.role)
-        console.log('💾 localStorage saved with auth_token key (1 week)')
+        console.log('💾 localStorage saved with token key (1 week)')
       }
     },
     
     logout: (state) => {
-      const currentTabId = state.tabId
-      
       state.user = null
       state.token = null
       state.isAuthenticated = false
       state.error = null
+      state.tabId = null
       
       // Clear localStorage - all auth keys
       if (typeof window !== 'undefined') {
         // Clear simple keys
-        localStorage.removeItem('auth_token')
-        localStorage.removeItem('auth_user')
+        localStorage.removeItem('token')
+        localStorage.removeItem('user')
         localStorage.removeItem('isAuthenticated')
+        localStorage.removeItem('role')
         localStorage.removeItem('tabId')
         
         // Clear cookies
         deleteCookie('isAuthenticated')
         deleteCookie('userRole')
-        deleteCookie('auth_token')
-        if (currentTabId) {
-          deleteCookie(`token_${currentTabId}`)
-        }
+        deleteCookie('token')
+        deleteCookie('user')
+        deleteCookie('admin_id')
+        deleteCookie('userId')
+        deleteCookie('username')
         
         console.log('🧹 Session cleared - logout (localStorage + cookies)')
       }
@@ -124,7 +124,7 @@ const authSlice = createSlice({
       
       // Update localStorage
       if (typeof window !== 'undefined') {
-        localStorage.setItem('auth_user', JSON.stringify(state.user))
+        localStorage.setItem('user', JSON.stringify(state.user))
       }
     },
     

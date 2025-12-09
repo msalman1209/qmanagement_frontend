@@ -13,16 +13,9 @@ export default function ShortReportsPage({ adminId }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Helper to get tab-specific storage key
-  const getStorageKey = (key) => {
-    if (typeof window === 'undefined') return key;
-    const tabId = sessionStorage.getItem('tabId');
-    return tabId ? `${key}_${tabId}` : key;
-  };
-
   // Check user role on mount
   useEffect(() => {
-    const userStr = sessionStorage.getItem(getStorageKey('user'));
+    const userStr = localStorage.getItem('user');
     if (userStr) {
       try {
         const user = JSON.parse(userStr);
@@ -42,7 +35,7 @@ export default function ShortReportsPage({ adminId }) {
     setLoading(true);
     setError(null);
     try {
-      const token = sessionStorage.getItem(getStorageKey('token'));
+      const token = localStorage.getItem('token');
       
       if (!token) {
         throw new Error('No authentication token found. Please login again.');

@@ -31,8 +31,8 @@ const loadState = () => {
     if (typeof window === 'undefined') return undefined
 
     // Try to load from localStorage (primary) - 1 week persistence
-    const token = localStorage.getItem('auth_token')
-    const userStr = localStorage.getItem('auth_user')
+    const token = localStorage.getItem('token')
+    const userStr = localStorage.getItem('user')
 
     if (token && userStr) {
       const user = JSON.parse(userStr)

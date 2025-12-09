@@ -12,16 +12,8 @@ export default function UserSidebar() {
   const [counter, setCounter] = useState('-');
 
   useEffect(() => {
-    // Get user info from sessionStorage
-    const getStorageKey = (key) => {
-      if (typeof window !== 'undefined') {
-        const tabId = sessionStorage.getItem('tabId');
-        return tabId ? `${key}_${tabId}` : key;
-      }
-      return key;
-    };
-
-    const userStr = sessionStorage.getItem(getStorageKey('user'));
+    // Get user info from localStorage
+    const userStr = localStorage.getItem('user');
     if (userStr) {
       try {
         const user = JSON.parse(userStr);

@@ -97,13 +97,8 @@ export default function UserDashboard() {
         const allTickets = res.data.tickets || [];
         const services = res.data.assignedServices || [];
         
-        // Get current user's username from sessionStorage (tab-specific)
-        const getStorageKey = (key) => {
-          const tabId = sessionStorage.getItem('tabId');
-          return tabId ? `${key}_${tabId}` : key;
-        };
-        
-        const userStr = sessionStorage.getItem(getStorageKey('user'));
+        // Get current user's username from localStorage
+        const userStr = localStorage.getItem('user');
         const currentUser = userStr ? JSON.parse(userStr) : null;
         const currentUsername = currentUser?.username || '';
         
@@ -255,13 +250,8 @@ export default function UserDashboard() {
     if (!token) return;
     
     try {
-      // Get current user from sessionStorage
-      const getStorageKey = (key) => {
-        const tabId = sessionStorage.getItem('tabId');
-        return tabId ? `${key}_${tabId}` : key;
-      };
-      
-      const userStr = sessionStorage.getItem(getStorageKey('user'));
+      // Get current user from localStorage
+      const userStr = localStorage.getItem('user');
       const currentUser = userStr ? JSON.parse(userStr) : null;
       
       if (!currentUser?.id) return;
@@ -590,13 +580,8 @@ export default function UserDashboard() {
         setTimerInterval(null);
       }
       
-      // Get current user info from sessionStorage (tab-specific)
-      const getStorageKey = (key) => {
-        const tabId = sessionStorage.getItem('tabId');
-        return tabId ? `${key}_${tabId}` : key;
-      };
-      
-      const userStr = sessionStorage.getItem(getStorageKey('user'));
+      // Get current user info from localStorage
+      const userStr = localStorage.getItem('user');
       const currentUser = userStr ? JSON.parse(userStr) : null;
       
       console.log('🔍 Transfer validation:');

@@ -19,19 +19,16 @@ export default function LogoutPage() {
     
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
     
-    // Get tab ID and token from sessionStorage (same way as authSlice)
-    const tabId = sessionStorage.getItem('tabId');
-    const storageKey = tabId ? `token_${tabId}` : 'token';
-    const token = sessionStorage.getItem(storageKey);
+    // Get token from localStorage (we migrated from sessionStorage to localStorage)
+    const token = localStorage.getItem('token');
     
     console.log('🔴 LOGOUT STARTED');
-    console.log('🆔 Tab ID:', tabId);
     console.log('🔍 Token found:', token ? 'Yes (' + token.substring(0, 20) + '...)' : 'No');
     
     try {
-      // Call backend logout API
+      // Call backend logout API to remove session from database
       if (token) {
-        console.log('📡 Calling:', `${API_URL}/auth/logout`);
+        console.log('📡 Calling backend:', `${API_URL}/auth/logout`);
         
         const response = await fetch(`${API_URL}/auth/logout`, {
           method: 'POST',
@@ -44,11 +41,13 @@ export default function LogoutPage() {
         const data = await response.json();
         console.log('✅ Backend Response:', data);
         
-        if (!response.ok) {
+        if (response.ok && data.success) {
+          console.log('✅ Backend session removed successfully');
+        } else {
           console.error('⚠️ Logout API failed:', response.status, data);
         }
       } else {
-        console.warn('⚠️ No token - skipping API call');
+        console.warn('⚠️ No token found - skipping backend call');
       }
     } catch (err) {
       console.error('❌ Logout API Error:', err.message);
@@ -60,29 +59,25 @@ export default function LogoutPage() {
     // Clear Redux store
     dispatch(logout());
     
-    // Clear cookies
+    // Clear all cookies (including 7-day cookies)
     deleteCookie('isAuthenticated');
     deleteCookie('userRole');
     deleteCookie('token');
-    if (tabId) {
-      deleteCookie(`token_${tabId}`);
-    }
+    deleteCookie('user');
+    deleteCookie('admin_id');
+    deleteCookie('userId');
+    deleteCookie('username');
     
-    // Clear sessionStorage (tab-specific)
-    if (tabId) {
-      sessionStorage.removeItem(`token_${tabId}`);
-      sessionStorage.removeItem(`user_${tabId}`);
-      sessionStorage.removeItem(`isAuthenticated_${tabId}`);
-    }
-    sessionStorage.removeItem('token');
-    sessionStorage.removeItem('user');
-    sessionStorage.removeItem('isAuthenticated');
-    
-    // Clear localStorage as fallback
+    // Clear localStorage (our new primary storage)
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    localStorage.removeItem('isAuthenticated');
+    localStorage.removeItem('role');
     
-    console.log('✅ LOCAL DATA CLEARED');
+    // Clear sessionStorage as well (for any legacy data)
+    sessionStorage.clear();
+    
+    console.log('✅ ALL LOCAL DATA CLEARED');
     console.log('🔄 Redirecting to login...');
     
     // Small delay to ensure logs are visible
