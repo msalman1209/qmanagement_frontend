@@ -471,14 +471,27 @@ function TicketInfoContent() {
         if (response.data.success && response.data.audioUrl) {
           console.log(`✅ Box ${i + 1} audio generated:`, response.data.audioUrl);
           
-          // Add cache buster to audio URL to prevent caching issues
-          const audioUrl = `${response.data.audioUrl}?t=${Date.now()}`;
+          // Construct proper audio URL - add cache buster
+          let audioUrl = response.data.audioUrl;
+          
+          // If URL is relative, make it absolute
+          if (!audioUrl.startsWith('http://') && !audioUrl.startsWith('https://')) {
+            // Use Python TTS service URL (default: http://localhost:3002)
+            const pythonServiceUrl = process.env.NEXT_PUBLIC_PYTHON_TTS_URL || 'http://localhost:3002';
+            audioUrl = `${pythonServiceUrl}${audioUrl}`;
+          }
+          
+          // Add cache buster to prevent caching issues
+          audioUrl = `${audioUrl}?t=${Date.now()}`;
+          
+          console.log(`🔊 Box ${i + 1} final audio URL:`, audioUrl);
           
           // Play audio and wait for completion before next language
           await new Promise((resolve, reject) => {
             const audio = new Audio(audioUrl);
             audio.volume = 1.0;
             audio.preload = 'auto';
+            audio.crossOrigin = 'anonymous'; // Handle CORS
             
             audio.onplay = () => console.log(`▶️ Box ${i + 1} (${lang}) announcement started`);
             audio.onended = () => {
@@ -491,8 +504,10 @@ function TicketInfoContent() {
             };
             audio.onerror = (e) => {
               console.error(`❌ Box ${i + 1} audio error:`, e);
+              console.error(`❌ Failed audio URL:`, audioUrl);
+              console.error(`❌ Audio element:`, audio);
               audio.remove();
-              reject(e);
+              reject(new Error(`Audio failed to load from ${audioUrl}`));
             };
             
             // Handle autoplay policy
@@ -504,17 +519,23 @@ function TicketInfoContent() {
                 })
                 .catch(error => {
                   console.error(`❌ Box ${i + 1} play failed:`, error);
+                  console.error(`❌ Error type:`, error.name);
+                  console.error(`❌ Error message:`, error.message);
+                  
                   if (i === 0) {
                     // Only show alert for first language
                     alert('🔊 Click OK to hear announcements (Browser autoplay policy)');
                   }
                   audio.play().catch(e => {
-                    console.error('Retry failed:', e);
+                    console.error('❌ Retry failed:', e);
                     audio.remove();
                     resolve(); // Continue to next language even if this fails
                   });
                 });
             }
+          }).catch(err => {
+            console.error(`❌ Promise rejected for Box ${i + 1}:`, err);
+            // Continue even if this language fails
           });
           
           // Small pause between languages (200ms) - pehli complete hone ke turant baad dosri
