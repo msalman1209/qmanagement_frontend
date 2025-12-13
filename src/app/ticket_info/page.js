@@ -357,12 +357,27 @@ function TicketInfoContent() {
   useEffect(() => {
     console.log('🔓 Auto-unlocking audio on page load');
     
+    // Initialize AudioContext for better audio quality
+    if (typeof window !== 'undefined' && !window.audioContext) {
+      try {
+        window.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        console.log('✅ AudioContext initialized for high quality playback');
+      } catch (e) {
+        console.warn('⚠️ AudioContext not supported:', e);
+      }
+    }
+    
     // Play a silent audio to unlock audio context automatically
     const silentAudio = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA');
     silentAudio.play()
       .then(() => {
         console.log('✅ Audio automatically unlocked');
         setAudioUnlocked(true);
+        
+        // Resume AudioContext if suspended
+        if (window.audioContext && window.audioContext.state === 'suspended') {
+          window.audioContext.resume();
+        }
       })
       .catch(e => {
         console.log('⚠️ Auto-unlock failed (browser policy), will retry on first announcement:', e);
@@ -522,9 +537,22 @@ function TicketInfoContent() {
           // Play audio and wait for completion before next language
           await new Promise((resolve, reject) => {
             const audio = new Audio();
-            audio.volume = 1.0;
+            
+            // ✅ HIGH QUALITY AUDIO PLAYBACK SETTINGS
+            audio.volume = 0.95; // Slightly reduced to prevent clipping/distortion
             audio.preload = 'auto';
-            audio.crossOrigin = 'anonymous'; // Handle CORS
+            audio.crossOrigin = 'anonymous';
+            
+            // Enable better audio processing (if supported by browser)
+            if ('mozPreservesPitch' in audio) {
+              audio.mozPreservesPitch = true; // Firefox
+            }
+            if ('webkitPreservesPitch' in audio) {
+              audio.webkitPreservesPitch = true; // Chrome/Safari
+            }
+            if ('preservesPitch' in audio) {
+              audio.preservesPitch = true; // Standard
+            }
             
             // Set src AFTER setting up event listeners to avoid race conditions
             let isResolved = false;
