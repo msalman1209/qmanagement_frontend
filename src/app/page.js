@@ -1,14 +1,19 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
+import { logout } from '@/store';
+
+const deleteCookie = (name) => {
+  document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/`;
+};
 
 export default function Home() {
   const router = useRouter();
   const currentUser = useSelector((state) => state.auth.user);
   const token = useSelector((state) => state.auth.token);
   const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
-
+  const dispatch = useDispatch();
   const [showRecentTickets, setShowRecentTickets] = useState(false);
   const [showReportsModal, setShowReportsModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
@@ -547,6 +552,85 @@ export default function Home() {
     );
   }
 
+
+    const handleLogout = async () => {
+    setLoading(true);
+    
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+    
+    // Use Redux token first, fallback to localStorage
+    const logoutToken = token || localStorage.getItem('token');
+    
+    console.log('🔴 LOGOUT STARTED');
+    console.log('🔍 Token found:', logoutToken ? 'Yes (' + logoutToken.substring(0, 20) + '...)' : 'No');
+    console.log('API URL:', API_URL);
+    
+    try {
+      // Call backend logout API to remove session from database
+      if (logoutToken) {
+        const logoutUrl = `${API_URL}/auth/logout`;
+        console.log('📡 Calling backend:', logoutUrl);
+        
+        const response = await fetch(logoutUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${logoutToken}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        console.log('📊 Response Status:', response.status);
+        
+        const data = await response.json();
+        console.log('✅ Backend Response:', data);
+        
+        if (response.ok && data.success) {
+          console.log('✅ Backend session removed successfully');
+        } else {
+          console.error('⚠️ Logout API failed:', response.status, data);
+        }
+      } else {
+        console.warn('⚠️ No token found - skipping backend call');
+      }
+    } catch (err) {
+      console.error('❌ Logout API Error:', err.message);
+    }
+    
+    // ALWAYS clear local data regardless of API success
+    console.log('🧹 Clearing local auth data...');
+    
+    // Clear Redux store
+    dispatch(logout());
+    
+    // Clear all cookies (including 7-day cookies)
+    deleteCookie('isAuthenticated');
+    deleteCookie('userRole');
+    deleteCookie('token');
+    deleteCookie('user');
+    deleteCookie('admin_id');
+    deleteCookie('userId');
+    deleteCookie('username');
+    
+    // Clear localStorage (our new primary storage)
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    localStorage.removeItem('isAuthenticated');
+    localStorage.removeItem('role');
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('auth_user');
+    
+    // Clear sessionStorage as well (for any legacy data)
+    sessionStorage.clear();
+    
+    console.log('✅ ALL LOCAL DATA CLEARED');
+    console.log('🔄 Redirecting to login...');
+    
+    // Small delay to ensure logs are visible
+    setTimeout(() => {
+      router.push('/login');
+    }, 500);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8">
@@ -559,6 +643,16 @@ export default function Home() {
           {/* Action Buttons */}
           <div className="flex items-center gap-4">
             {/* Reports Button */}
+              <button
+                 onClick={handleLogout}
+            disabled={loading}
+                  className="px-6 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 rounded-lg transition-all shadow-lg shadow-red-500/30 hover:shadow-xl hover:shadow-red-500/40"
+                >
+                  <svg className="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                  Logout
+                </button>
             <button
               onClick={() => setShowReportsModal(true)}
               className="px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-lg shadow-lg hover:shadow-xl hover:from-purple-700 hover:to-purple-800 transition-all flex items-center gap-2"
