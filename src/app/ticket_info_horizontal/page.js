@@ -929,16 +929,69 @@ function TicketInfoContent() {
 
   return (
     <ProtectedRoute allowedRoles={['ticket_info']}>
-      <div className="flex flex-row h-screen w-full bg-white text-white font-sans overflow-hidden">
-      {/* Left Panel: Counter Table */}
-      <div className="flex-[0_0_30%] bg-green-700 flex flex-col border-r-[3px] border-[#fdbb2d] overflow-hidden">
+      <div className="flex flex-col h-screen w-full bg-white text-white font-sans overflow-hidden">
+      {/* Header Section - Full Width */}
+        
+      <div className="w-full flex justify-around items-center bg-white/95 shadow-lg h-[150px] border-b border-gray-300">
+          {/* Left Logo - Dynamic from database */}
+          <div className="flex-[0_0_25%] text-center">
+            {leftLogoUrl ? (
+              <img
+                src={`http://localhost:5000${leftLogoUrl}`}
+                alt="Left Logo"
+                className="w-[150px] h-[100px] mx-auto object-contain"
+              />
+            ) : (
+              <img
+                src="https://ded.techsolutionor.com/assets/img/logo/DEDpreview.png"
+                alt="Logo"
+                className="w-[150px] h-[100px] mx-auto object-contain"
+              />
+            )}
+          </div>
+          
+          {/* Now Calling Section */}
+          <div className="flex-[0_0_50%] text-center border-l-[5px] border-r-[5px] border-gray-300">
+            <div className="text-black font-bold text-[40px]">
+              <b className="text-red-600 text-[50px]">Now Calling</b>
+              <br />
+              <span className="text-[50px] uppercase font-bold">{calledTicket || 'Waiting...'}</span>
+              {calledTicket && (
+                <>
+                  <span className="inline-block w-[50px] h-[6px] bg-black align-middle mx-2"></span>
+                  <span className="text-[50px] font-bold">{currentCounter || 'N/A'}</span>
+                </>
+              )}
+            </div>
+          </div>
+          
+          {/* Right Logo - Dynamic from database */}
+          <div className="flex-[0_0_25%] text-center">
+            {rightLogoUrl ? (
+              <img
+                src={`http://localhost:5000${rightLogoUrl}`}
+                alt="Right Logo"
+                className="w-[150px] h-[100px] mx-auto object-contain"
+              />
+            ) : (
+              <img
+                src="https://epbc.techsolutionor.com/assets/img/logo/image-removebg-preview.png"
+                alt="Logo"
+                className="w-[150px] h-[100px] mx-auto object-contain"
+              />
+            )}
+          </div>
+        </div>
+
+      {/* Full Width Table Section */}
+      <div className="flex-1 bg-green-700 flex flex-col overflow-hidden">
         <table className="w-full border-collapse">
           <thead>
             <tr>
-              <th className="bg-green-700 text-[38.4px] text-white text-center p-2 font-bold shadow-lg rounded-lg">
+              <th className="bg-green-700 text-[48px] text-white text-center p-5 font-bold shadow-lg">
                 Ticket
               </th>
-              <th className="bg-green-700 text-[38.4px] text-white text-center p-2 font-bold shadow-lg rounded-lg">
+              <th className="bg-green-700 text-[48px] text-white text-center p-5 font-bold shadow-lg">
                 Counter
               </th>
             </tr>
@@ -998,11 +1051,11 @@ function TicketInfoContent() {
                     const textWeight = isCurrentTicket ? 'font-bold' : 'font-bold';
                     
                     return (
-                      <tr key={index} className={`border-b-1 border-[#e6e9ec] ${isCurrentTicket ? 'animate-pulse' : ''}`}>
-                        <td className={`${bgColor} text-black uppercase text-[60px] text-center align-middle ${textWeight} lg:text-[4vw] md:text-[5vw] sm:text-[7vw]`}>
+                      <tr key={index} className={`border-b-2 border-[#e6e9ec] ${isCurrentTicket ? 'animate-pulse' : ''}`}>
+                        <td className={`${bgColor} text-black uppercase text-[65px] text-center align-middle ${textWeight} py-5`}>
                           {item.ticket_number}
                         </td>
-                        <td className={`${bgColor} text-black text-[60px] text-center align-middle ${textWeight} lg:text-[3vw] md:text-[5vw] sm:text-[7vw]`}>
+                        <td className={`${bgColor} text-black text-[65px] text-center align-middle ${textWeight} py-5`}>
                           {item.counter_no || 'N/A'}
                         </td>
                       </tr>
@@ -1014,119 +1067,82 @@ function TicketInfoContent() {
         </table>
       </div>
 
-      {/* Right Panel: Header, Slider, and News Ticker */}
-      <div className="flex-[0_0_70%] flex flex-col relative">
-        
-        {/* Header Section */}
-        <div className="w-full flex justify-around items-center bg-white/95 shadow-lg h-[200px] border-b border-gray-300">
-          {/* Left Logo - Dynamic from database */}
-          <div className="flex-[0_0_25%] text-center">
-            {leftLogoUrl ? (
-              <img
-                src={`http://localhost:5000${leftLogoUrl}`}
-                alt="Left Logo"
-                className="w-[150px] h-[100px] mx-auto object-contain"
-              />
-            ) : (
-              <img
-                src="https://ded.techsolutionor.com/assets/img/logo/DEDpreview.png"
-                alt="Logo"
-                className="w-[150px] h-[100px] mx-auto object-contain"
-              />
-            )}
-          </div>
-          
-          {/* Now Calling Section */}
-          <div className="flex-[0_0_50%] text-center border-l-[5px] border-r-[5px] border-gray-300">
-            <div className="text-black font-bold text-[40px]">
-              <b className="text-red-600 text-[50px]">Now Calling</b>
-              <br />
-              <span className="text-[50px] uppercase font-bold">{calledTicket || 'Waiting...'}</span>
-              {calledTicket && (
-                <>
-                  <span className="inline-block w-[50px] h-[6px] bg-black align-middle mx-2"></span>
-                  <span className="text-[50px] font-bold">{currentCounter || 'N/A'}</span>
-                </>
-              )}
-            </div>
-          </div>
-          
-          {/* Right Logo - Dynamic from database */}
-          <div className="flex-[0_0_25%] text-center">
-            {rightLogoUrl ? (
-              <img
-                src={`http://localhost:5000${rightLogoUrl}`}
-                alt="Right Logo"
-                className="w-[150px] h-[100px] mx-auto object-contain"
-              />
-            ) : (
-              <img
-                src="https://epbc.techsolutionor.com/assets/img/logo/image-removebg-preview.png"
-                alt="Logo"
-                className="w-[150px] h-[100px] mx-auto object-contain"
-              />
-            )}
-          </div>
-        </div>
-
-        {/* Content Area - Video or Image Slider */}
-        <div className="relative w-full h-[calc(100%-15vh)] rounded-lg overflow-hidden mb-0 bg-white">
-          {contentType === 'video' && videoUrl ? (
-            // Video Display
-            <video
-              src={`http://localhost:5000${videoUrl}`}
-              className="w-full h-full object-contain"
-              autoPlay
-              loop
-              muted
-            />
-          ) : contentType === 'images' && sliderImages.length > 0 ? (
-            // Image Slider Display
-            <>
-              {sliderImages.map((slide, index) => (
-                <div
-                  key={index}
-                  className={`absolute inset-0 transition-opacity duration-1000 ${
-                    index === currentSlide ? 'opacity-100' : 'opacity-0'
-                  }`}
-                >
-                  <img src={slide} alt={`Slide ${index + 1}`} className="w-full h-full object-contain" />
-                </div>
-              ))}
-            </>
-          ) : (
-            // Fallback to default slides if no config
-            <>
-              {slides.map((slide, index) => (
-                <div
-                  key={index}
-                  className={`absolute inset-0 transition-opacity duration-1000 ${
-                    index === currentSlide ? 'opacity-100' : 'opacity-0'
-                  }`}
-                >
-                  <img src={slide} alt={`Slide ${index + 1}`} className="w-full h-full object-contain" />
-                </div>
-              ))}
-            </>
-          )}
-        </div>
-
-        {/* News Ticker - Dynamic from database */}
-        <div className="w-full bg-[#333] text-white p-4 text-center text-[3vh] font-bold h-[8vh] flex items-center justify-center">
-          <marquee>{tickerContent}</marquee>
-        </div>
+      {/* News Ticker - Dynamic from database - Full Width */}
+      <div className="w-full bg-[#333] text-white p-4 text-center text-[32px] font-bold h-[70px] flex items-center justify-center">
+        <marquee>{tickerContent}</marquee>
       </div>
 
       {/* Responsive Styles */}
       <style jsx>{`
-        @media (max-width: 768px) {
-          .flex-[0_0_30%] {
-            flex: 0 0 100%;
-            height: auto;
-            overflow-y: auto;
+        /* Large Screens (Desktop) - Bigger fonts */
+        @media (min-width: 1920px) {
+          table th {
+            font-size: 80px !important;
+            padding: 8px !important;
           }
-          .flex-[0_0_70%] {
-            display: none;
+          table td {
+            font-size: 100px !important;
+            padding: 10px !important;
+          }
+        }
+        
+        /* Medium-Large Screens (1440px - 1920px) */
+        @media (min-width: 1440px) and (max-width: 1919px) {
+          table th {
+            font-size: 70px !important;
+            padding: 7px !important;
+          }
+          table td {
+            font-size: 90px !important;
+            padding: 8px !important;
+          }
+        }
+        
+        /* Standard Screens (1024px - 1439px) - Current size */
+        @media (min-width: 1024px) and (max-width: 1439px) {
+          table th {
+            font-size: 48px !important;
+            padding: 5px !important;
+          }
+          table td {
+            font-size: 65px !important;
+            padding: 5px !important;
+          }
+        }
+        
+        /* Tablets (768px - 1023px) - Smaller */
+        @media (min-width: 768px) and (max-width: 1023px) {
+          table th {
+            font-size: 45px !important;
+            padding: 10px !important;
+          }
+          table td {
+            font-size: 60px !important;
+            padding: 12px !important;
+          }
+        }
+        
+        /* Small Tablets/Large Phones (481px - 767px) */
+        @media (min-width: 481px) and (max-width: 767px) {
+          table th {
+            font-size: 35px !important;
+            padding: 8px !important;
+          }
+          table td {
+            font-size: 45px !important;
+            padding: 10px !important;
+          }
+        }
+        
+        /* Mobile Phones (max 480px) - Smallest */
+        @media (max-width: 480px) {
+          table th {
+            font-size: 28px !important;
+            padding: 6px !important;
+          }
+          table td {
+            font-size: 36px !important;
+            padding: 8px !important;
           }
         }
       `}</style>
