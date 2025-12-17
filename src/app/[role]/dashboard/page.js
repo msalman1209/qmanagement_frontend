@@ -23,6 +23,9 @@ export default function UserDashboard() {
   const [transferUsername, setTransferUsername] = useState('');
   const [availableUsers, setAvailableUsers] = useState([]);
   const [showNextConfirmModal, setShowNextConfirmModal] = useState(false);
+  const [isNextProcessing, setIsNextProcessing] = useState(false);
+  const [isTransferProcessing, setIsTransferProcessing] = useState(false);
+  const [isNotSolvedProcessing, setIsNotSolvedProcessing] = useState(false);
   const [transferredTickets, setTransferredTickets] = useState([]);
   const [showCalledDrawer, setShowCalledDrawer] = useState(false);
   const [calledTickets, setCalledTickets] = useState([]);
@@ -386,6 +389,8 @@ export default function UserDashboard() {
     const token = getToken();
     if (!token) return;
     
+    setIsNextProcessing(true); // Disable button
+    
     try {
       // Update current ticket status to Unattended
       await axios.put(
@@ -402,10 +407,13 @@ export default function UserDashboard() {
       // Refresh to get updated list which will auto-select next ticket
       await fetchAssignedTickets(false);
       
+      // Auto-close modal after completion
       setShowNextConfirmModal(false);
+      setIsNextProcessing(false);
     } catch (error) {
       console.error('Error marking ticket as unattended:', error);
       setShowNextConfirmModal(false);
+      setIsNextProcessing(false);
     }
   };
 
@@ -524,6 +532,8 @@ export default function UserDashboard() {
     const token = getToken();
     if (!token) return;
     
+    setIsNotSolvedProcessing(true); // Disable button
+    
     try {
       // Stop timer
       if (timerInterval) {
@@ -564,15 +574,19 @@ export default function UserDashboard() {
       // Reset state
       setIsAccepted(false);
       setTimer(0);
-      setShowReasonModal(false);
       setNotSolvedReason('');
       setCurrentTicket(''); // Clear current ticket immediately
       
       // Refresh tickets - will automatically show next available ticket
       await fetchAssignedTickets(false);
       
+      // Auto-close modal after completion
+      setShowReasonModal(false);
+      setIsNotSolvedProcessing(false);
+      
     } catch (error) {
       console.error('Error marking ticket as not solved:', error);
+      setIsNotSolvedProcessing(false);
     }
   };
 
@@ -603,6 +617,8 @@ export default function UserDashboard() {
     const token = getToken();
     if (!token || !transferUsername.trim()) return;
     
+    setIsTransferProcessing(true); // Disable button
+    
     try {
       // Stop timer
       if (timerInterval) {
@@ -622,6 +638,7 @@ export default function UserDashboard() {
       
       if (!currentUser || !currentUser.username) {
         alert('Error: Unable to identify current user. Please refresh and try again.');
+        setIsTransferProcessing(false);
         return;
       }
       
@@ -632,12 +649,14 @@ export default function UserDashboard() {
       
       if (!targetUser) {
         alert(`Error: User "${transferUsername}" not found. Please select a valid user from the list.`);
+        setIsTransferProcessing(false);
         return;
       }
       
       // Check if both users are under same admin
       if (currentUser?.admin_id && targetUser?.admin_id && currentUser.admin_id !== targetUser.admin_id) {
         alert(`Error: User "${transferUsername}" is not under the same admin. You can only transfer tickets to users within your admin group.`);
+        setIsTransferProcessing(false);
         return;
       }
       
@@ -670,7 +689,6 @@ export default function UserDashboard() {
       setIsAccepted(false);
       setIsCalling(false);
       setTimer(0);
-      setShowTransferModal(false);
       setTransferUsername('');
       
       // Clear current ticket so fetchAssignedTickets will pick next one
@@ -695,15 +713,20 @@ export default function UserDashboard() {
       
       console.log(`📤 Transfer event broadcasted: ${transferredTicket} -> ${transferUsername}`);
       
-      // Show success message
-      alert(`Ticket successfully transferred to ${transferUsername}`);
-      
       // Refresh tickets - this will automatically set next available ticket
       await fetchAssignedTickets(false);
+      
+      // Auto-close modal after completion
+      setShowTransferModal(false);
+      setIsTransferProcessing(false);
+      
+      // Show success message after modal is closed
+      alert(`Ticket successfully transferred to ${transferUsername}`);
       
     } catch (error) {
       console.error('Error transferring ticket:', error);
       alert('Failed to transfer ticket. Please try again.');
+      setIsTransferProcessing(false);
     }
   };
 
@@ -1050,14 +1073,14 @@ export default function UserDashboard() {
               </button>
               <button
                 onClick={handleNotSolvedSubmit}
-                disabled={!notSolvedReason.trim()}
+                disabled={!notSolvedReason.trim() || isNotSolvedProcessing}
                 className={`flex-1 px-6 py-3 rounded-lg transition-all font-semibold ${
-                  notSolvedReason.trim()
+                  notSolvedReason.trim() && !isNotSolvedProcessing
                     ? 'bg-red-500 hover:bg-red-600 text-white shadow-lg hover:shadow-xl'
                     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 }`}
               >
-                Submit
+                {isNotSolvedProcessing ? 'Processing...' : 'Submit'}
               </button>
             </div>
           </div>
@@ -1066,42 +1089,32 @@ export default function UserDashboard() {
 
       {/* Transfer Modal */}
       {showTransferModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-2xl p-8 max-w-md w-full mx-4 transform transition-all">
             <h3 className="text-2xl font-bold text-gray-800 mb-4">Transfer Ticket</h3>
-            <p className="text-sm text-gray-600 mb-4">Enter the username to transfer this ticket to:</p>
-            <input
-              type="text"
+            <p className="text-sm text-gray-600 mb-4">Select a username to transfer this ticket to:</p>
+            <select
               value={transferUsername}
               onChange={(e) => setTransferUsername(e.target.value)}
-              placeholder="Enter username"
-              className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 mb-2 transition-all"
-              list="usernames"
-            />
-            <datalist id="usernames">
+              className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 mb-6 transition-all bg-white text-gray-900"
+            >
+              <option value="">-- Select User --</option>
               {availableUsers
                 .filter(user => {
                   const currentUserStr = localStorage.getItem('user');
                   const currentUser = currentUserStr ? JSON.parse(currentUserStr) : null;
-                  // Only show users under same admin
-                  return user.admin_id === currentUser?.admin_id && user.id !== currentUser?.id;
+                  // Only show users with role "user" under same admin
+                  return user.role === 'user' && 
+                         user.admin_id === currentUser?.admin_id && 
+                         user.id !== currentUser?.id;
                 })
                 .map((user) => (
-                  <option key={user.id} value={user.username} />
+                  <option key={user.id} value={user.username}>
+                    {user.username} {user.counter_no ? `(Counter ${user.counter_no})` : ''}
+                  </option>
                 ))
               }
-            </datalist>
-            <p className="text-xs text-gray-500 mb-6">
-              <strong>Available users in your group:</strong>{' '}
-              {availableUsers
-                .filter(user => {
-                  const currentUserStr = localStorage.getItem('user');
-                  const currentUser = currentUserStr ? JSON.parse(currentUserStr) : null;
-                  return user.admin_id === currentUser?.admin_id && user.id !== currentUser?.id;
-                })
-                .map(u => u.username)
-                .join(', ') || 'No other users available'}
-            </p>
+            </select>
             <div className="flex gap-4">
               <button
                 onClick={() => {
@@ -1114,14 +1127,14 @@ export default function UserDashboard() {
               </button>
               <button
                 onClick={handleTransferSubmit}
-                disabled={!transferUsername.trim()}
+                disabled={!transferUsername.trim() || isTransferProcessing}
                 className={`flex-1 px-6 py-3 rounded-lg transition-all font-semibold ${
-                  transferUsername.trim()
+                  transferUsername.trim() && !isTransferProcessing
                     ? 'bg-orange-500 hover:bg-orange-600 text-white shadow-lg hover:shadow-xl'
                     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 }`}
               >
-                Transfer
+                {isTransferProcessing ? 'Processing...' : 'Transfer'}
               </button>
             </div>
           </div>
@@ -1145,9 +1158,14 @@ export default function UserDashboard() {
               </button>
               <button
                 onClick={handleNextConfirm}
-                className="flex-1 px-6 py-3 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-all font-semibold shadow-lg hover:shadow-xl"
+                disabled={isNextProcessing}
+                className={`flex-1 px-6 py-3 rounded-lg transition-all font-semibold shadow-lg ${
+                  isNextProcessing
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-red-500 hover:bg-red-600 text-white hover:shadow-xl'
+                }`}
               >
-                Yes
+                {isNextProcessing ? 'Processing...' : 'Yes'}
               </button>
             </div>
           </div>
