@@ -28,6 +28,7 @@ export default function Home() {
   });
   const [activeField, setActiveField] = useState('name');
   const [licenseData, setLicenseData] = useState(null);
+  const [isCreatingTicket, setIsCreatingTicket] = useState(false);
 
   // Fetch services and license data for the logged-in user's admin
   useEffect(() => {
@@ -278,6 +279,7 @@ export default function Home() {
     }
     
     setShowDetailsModal(false);
+    setIsCreatingTicket(false); // Reset the flag
     // Print ticket without customer details
     if (ticketNumber) {
       printTicket(selectedService, { name: '', email: '', number: '' }, ticketNumber);
@@ -331,6 +333,7 @@ export default function Home() {
     }
     
     setShowDetailsModal(false);
+    setIsCreatingTicket(false); // Reset the flag
     
     // Print ticket
     if (ticketNumber) {
@@ -754,6 +757,13 @@ export default function Home() {
                 <div 
                   key={service.id}
                   onClick={async () => {
+                    // Prevent multiple clicks
+                    if (isCreatingTicket) {
+                      console.log('⚠️ Ticket creation already in progress, ignoring click');
+                      return;
+                    }
+
+                    setIsCreatingTicket(true);
                     setSelectedService(service);
                     
                     // Create ticket immediately when service is clicked
@@ -774,14 +784,18 @@ export default function Home() {
 
                       if (response.ok) {
                         const data = await response.json();
+                        console.log('✅ Ticket created:', data.ticket_id);
                         // Store the ticket info with the service
                         setSelectedService({ ...service, preCreatedTicket: data.ticket_id, ticketDbId: data.ticket?.id });
+                        setShowDetailsModal(true);
+                      } else {
+                        console.error('❌ Failed to create ticket');
+                        setIsCreatingTicket(false);
                       }
                     } catch (error) {
-                      console.error('Error creating ticket:', error);
+                      console.error('❌ Error creating ticket:', error);
+                      setIsCreatingTicket(false);
                     }
-                    
-                    setShowDetailsModal(true);
                   }}
                   className="rounded-lg shadow-lg hover:scale-105 hover:shadow-xl transition-all duration-300 cursor-pointer"
                   style={{ backgroundColor: service.color || `rgb(${Math.random() * 100 + 100}, ${Math.random() * 100 + 50}, ${Math.random() * 100 + 100})` }}
