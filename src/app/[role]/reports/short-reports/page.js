@@ -5,8 +5,12 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Document, Packer, Paragraph, Table, TableCell, TableRow, WidthType, AlignmentType, BorderStyle } from 'docx';
 import { saveAs } from 'file-saver';
+import { getUser } from '@/utils/sessionStorage';
 
-export default function ShortReportsPage({ adminId }) {
+export default function ShortReportsPage({ adminId: propAdminId }) {
+  // ✅ Get adminId from prop OR from logged-in user's session
+  const [effectiveAdminId, setEffectiveAdminId] = useState(null);
+  
   // Get current date and first day of current month
   const getCurrentDates = () => {
     const now = new Date();
@@ -28,6 +32,25 @@ export default function ShortReportsPage({ adminId }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // ✅ Initialize effectiveAdminId from prop or session
+  useEffect(() => {
+    if (propAdminId) {
+      setEffectiveAdminId(propAdminId);
+      console.log('✅ Using admin_id from prop:', propAdminId);
+    } else {
+      const sessionUser = getUser();
+      if (sessionUser && sessionUser.admin_id) {
+        setEffectiveAdminId(sessionUser.admin_id);
+        console.log('✅ Using admin_id from logged-in user:', sessionUser.admin_id);
+      } else if (sessionUser && sessionUser.role === 'admin') {
+        setEffectiveAdminId(sessionUser.id);
+        console.log('✅ Using admin_id from admin user:', sessionUser.id);
+      } else {
+        console.error('❌ No admin_id found in session');
+      }
+    }
+  }, [propAdminId]);
+
   // Check user role on mount
   useEffect(() => {
     const userStr = localStorage.getItem('user');
@@ -47,6 +70,12 @@ export default function ShortReportsPage({ adminId }) {
 
   // Fetch reports data
   const fetchReports = async () => {
+    // ✅ Wait for effectiveAdminId to be set
+    if (!effectiveAdminId) {
+      console.log('⏭️ Skipping fetch - effectiveAdminId not set yet');
+      return;
+    }
+    
     setLoading(true);
     setError(null);
     try {
@@ -57,14 +86,12 @@ export default function ShortReportsPage({ adminId }) {
       }
 
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
-      // Add adminId to query params if provided from modal
+      // ✅ Always include adminId in query params
       const queryParams = new URLSearchParams({
         startDate,
-        endDate
+        endDate,
+        adminId: effectiveAdminId
       });
-      if (adminId) {
-        queryParams.append('adminId', adminId);
-      }
       
       const response = await fetch(
         `${apiUrl}/tickets/reports?${queryParams.toString()}`,
@@ -106,10 +133,12 @@ export default function ShortReportsPage({ adminId }) {
     }
   };
 
-  // Load data on component mount and when adminId changes
+  // Load data on component mount and when effectiveAdminId changes
   useEffect(() => {
-    fetchReports();
-  }, [adminId]);
+    if (effectiveAdminId) {
+      fetchReports();
+    }
+  }, [effectiveAdminId]);
 
   // Debug: Log state changes
   useEffect(() => {

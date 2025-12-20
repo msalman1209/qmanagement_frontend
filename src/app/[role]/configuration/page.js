@@ -1,9 +1,28 @@
 'use client';
 import { useState, useEffect } from 'react';
 import axios from '@/utils/axiosInstance';
-import { getToken } from '@/utils/sessionStorage';
+import { getToken, getUser } from '@/utils/sessionStorage';
 
-export default function ConfigurationPage({ adminId }) {
+export default function ConfigurationPage({ adminId: propAdminId }) {
+  // ✅ Get adminId from prop OR from logged-in user's session
+  const [adminId, setAdminId] = useState(null);
+  
+  useEffect(() => {
+    // If adminId not provided as prop, get from logged-in user
+    if (propAdminId) {
+      setAdminId(propAdminId);
+      console.log('✅ Using admin_id from prop:', propAdminId);
+    } else {
+      const user = getUser();
+      if (user && user.admin_id) {
+        setAdminId(user.admin_id);
+        console.log('✅ Using admin_id from logged-in user:', user.admin_id);
+      } else {
+        console.error('❌ No admin_id found in user session');
+      }
+    }
+  }, [propAdminId]);
+  
   const [selectedLanguages, setSelectedLanguages] = useState(['en']); // Max 2 languages
   const [speechRate, setSpeechRate] = useState(0.9);
   const [speechPitch, setSpeechPitch] = useState(1.0);
@@ -34,10 +53,14 @@ export default function ConfigurationPage({ adminId }) {
   
   const loadSettings = async () => {
     try {
-      // Try to load from database
-      const url = adminId 
-        ? `${process.env.NEXT_PUBLIC_API_URL}/voices/settings?adminId=${adminId}`
-        : `${process.env.NEXT_PUBLIC_API_URL}/voices/settings`;
+      // ✅ Always require adminId - user must belong to an admin
+      if (!adminId) {
+        console.error('❌ No adminId provided - cannot load settings');
+        return;
+      }
+      
+      // Try to load from database with adminId
+      const url = `${process.env.NEXT_PUBLIC_API_URL}/voices/settings?adminId=${adminId}`;
         
       const response = await axios.get(url, {
         headers: getAuthHeaders()
@@ -231,6 +254,12 @@ export default function ConfigurationPage({ adminId }) {
   };
 
   const handleUpdateSettings = async () => {
+    // ✅ Validate adminId before saving
+    if (!adminId) {
+      alert('❌ Error: No admin ID found. Cannot save settings.');
+      return;
+    }
+    
     const settings = {
       selectedLanguages,
       speechRate,
@@ -240,18 +269,14 @@ export default function ConfigurationPage({ adminId }) {
     };
     
     try {
-      // Save to database with admin_id if provided
+      // Save to database with admin_id (always required)
       const payload = {
         voice_type: selectedChatterboxVoice,
         languages: JSON.stringify(selectedLanguages), // Save as JSON array
         speech_rate: speechRate,
-        speech_pitch: speechPitch
+        speech_pitch: speechPitch,
+        admin_id: adminId // ✅ Always include adminId
       };
-      
-      // If adminId is provided, include it
-      if (adminId) {
-        payload.admin_id = adminId;
-      }
       
       const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/voices/settings`, payload, {
         headers: getAuthHeaders()

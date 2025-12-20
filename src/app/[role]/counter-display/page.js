@@ -6,10 +6,26 @@ import { getToken, getUser } from '@/utils/sessionStorage';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ||  'http://localhost:5000/api/counter-display';
 
-export default function CounterDisplayPage({ adminId }) {
+export default function CounterDisplayPage({ adminId: propAdminId }) {
   const router = useRouter();
   // Get current user from session
   const currentUser = getUser();
+  
+  // ✅ Use adminId from prop OR from logged-in user's session
+  const [adminId, setAdminId] = useState(null);
+  
+  useEffect(() => {
+    if (propAdminId) {
+      setAdminId(propAdminId);
+      console.log('✅ Using admin_id from prop:', propAdminId);
+    } else if (currentUser && currentUser.admin_id) {
+      setAdminId(currentUser.admin_id);
+      console.log('✅ Using admin_id from logged-in user:', currentUser.admin_id);
+    } else {
+      console.error('❌ No admin_id found');
+    }
+  }, [propAdminId, currentUser]);
+  
   const [contentType, setContentType] = useState('video'); // 'video' or 'images'
   const [uploadedVideo, setUploadedVideo] = useState(null);
   const [videoUrl, setVideoUrl] = useState('');
@@ -51,12 +67,12 @@ export default function CounterDisplayPage({ adminId }) {
       return;
     }
     
-    fetchConfiguration();
-    const effectiveAdminId = adminId || currentUser?.id;
-    if (effectiveAdminId) {
+    // ✅ Only fetch if adminId is available
+    if (adminId) {
+      fetchConfiguration();
       fetchTicketInfoUsers();
     }
-  }, [adminId, currentUser?.id]);
+  }, [adminId]);
 
   // Prevent body scroll when modal is open
   useEffect(() => {
@@ -72,7 +88,13 @@ export default function CounterDisplayPage({ adminId }) {
 
   const fetchConfiguration = async () => {
     try {
-      const url = adminId ? `${API_URL}/counter-display/config?adminId=${adminId}` : `${API_URL}/counter-display/config`;
+      // ✅ Always require adminId
+      if (!adminId) {
+        console.error('❌ No adminId available - cannot fetch configuration');
+        return;
+      }
+      
+      const url = `${API_URL}/counter-display/config?adminId=${adminId}`;
       const response = await axios.get(url, {
         headers: getAuthHeaders()
       });
@@ -116,13 +138,13 @@ export default function CounterDisplayPage({ adminId }) {
   // Fetch Ticket Info Users
   const fetchTicketInfoUsers = async () => {
     try {
-      const effectiveAdminId = adminId || currentUser?.id;
-      if (!effectiveAdminId) {
+      // ✅ Always require adminId
+      if (!adminId) {
         console.warn('⚠️ Admin ID not available for fetching ticket info users');
         return;
       }
       
-      const response = await axios.get(`${API_URL}/user/ticket-info-users?adminId=${effectiveAdminId}`, {
+      const response = await axios.get(`${API_URL}/user/ticket-info-users?adminId=${adminId}`, {
         headers: getAuthHeaders()
       });
       if (response.data.success) {
@@ -142,10 +164,8 @@ export default function CounterDisplayPage({ adminId }) {
       return;
     }
 
-    // Use currentUser.id if adminId prop is not available
-    const effectiveAdminId = adminId || currentUser?.id;
-    
-    if (!effectiveAdminId) {
+    // ✅ Always require adminId
+    if (!adminId) {
       showMessage('error', 'Admin ID not found. Please login again.');
       return;
     }
@@ -153,13 +173,13 @@ export default function CounterDisplayPage({ adminId }) {
     console.log('📝 Creating Ticket Info User:', {
       username: newUserData.username,
       email: newUserData.email,
-      admin_id: effectiveAdminId
+      admin_id: adminId
     });
 
     try {
       const response = await axios.post(`${API_URL}/user/create-ticket-info`, {
         ...newUserData,
-        admin_id: effectiveAdminId,
+        admin_id: adminId,
         role: 'ticket_info'
       }, {
         headers: {

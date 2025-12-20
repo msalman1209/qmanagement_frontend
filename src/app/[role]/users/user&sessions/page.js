@@ -2,9 +2,9 @@
 import { useState, useEffect } from 'react';
 import { FaEye, FaSignOutAlt, FaPlus, FaUser, FaEnvelope, FaLock, FaUserTag, FaTimes } from 'react-icons/fa';
 import axios from '@/utils/axiosInstance';
-import { getToken } from '@/utils/sessionStorage';
+import { getToken, getUser } from '@/utils/sessionStorage';
 
-export default function UserManagementPage({ adminId }) {
+export default function UserManagementPage({ adminId: propAdminId }) {
   const [users, setUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
   const [showViewModal, setShowViewModal] = useState(false);
@@ -13,7 +13,10 @@ export default function UserManagementPage({ adminId }) {
   const [admins, setAdmins] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
   const [userCount, setUserCount] = useState(0);
-  const [selectedAdminId, setSelectedAdminId] = useState(adminId || '');
+  
+  // ✅ Use adminId from prop OR from logged-in user's session
+  const [adminId, setAdminId] = useState(null);
+  const [selectedAdminId, setSelectedAdminId] = useState('');
   const [licenseInfo, setLicenseInfo] = useState(null);
 
   const [formData, setFormData] = useState({
@@ -67,6 +70,28 @@ export default function UserManagementPage({ adminId }) {
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
+  // ✅ Initialize adminId from prop or session
+  useEffect(() => {
+    if (propAdminId) {
+      setAdminId(propAdminId);
+      setSelectedAdminId(String(propAdminId));
+      console.log('✅ Using admin_id from prop:', propAdminId);
+    } else {
+      const sessionUser = getUser();
+      if (sessionUser && sessionUser.admin_id) {
+        setAdminId(sessionUser.admin_id);
+        setSelectedAdminId(String(sessionUser.admin_id));
+        console.log('✅ Using admin_id from logged-in user:', sessionUser.admin_id);
+      } else if (sessionUser && sessionUser.role === 'admin') {
+        setAdminId(sessionUser.id);
+        setSelectedAdminId(String(sessionUser.id));
+        console.log('✅ Using admin_id from admin user:', sessionUser.id);
+      } else {
+        console.error('❌ No admin_id found in session');
+      }
+    }
+  }, [propAdminId]);
+
   const fetchUsers = async (targetAdminId) => {
     const token = getToken();
     if (!token) return;
@@ -99,16 +124,32 @@ export default function UserManagementPage({ adminId }) {
 
   const fetchLicenseInfo = async (targetAdminId) => {
     const token = getToken();
-    if (!token || !targetAdminId) return;
+    if (!token || !targetAdminId) {
+      console.log('⏭️ Skipping license fetch - no token or adminId');
+      return;
+    }
+    
+    // ✅ Only fetch license if user is admin or super_admin
+    const sessionUser = getUser();
+    console.log('🔍 License fetch check - User role:', sessionUser?.role, 'User:', sessionUser?.username);
+    
+    if (!sessionUser || (sessionUser.role !== 'admin' && sessionUser.role !== 'super_admin')) {
+      console.log('ℹ️ License info only available for admins - skipping for role:', sessionUser?.role);
+      setLicenseInfo(null);
+      return;
+    }
+    
+    console.log('📊 Fetching license info for admin:', targetAdminId);
     try {
       const res = await axios.get(`${apiUrl}/license/admin-license/${targetAdminId}`, { 
         headers: { Authorization: `Bearer ${token}` } 
       });
       if (res.data.success) {
         setLicenseInfo(res.data.data);
+        console.log('✅ License info loaded successfully');
       }
     } catch (e) {
-      console.error('[License][GET] error', e.response?.data || e.message);
+      console.warn('⚠️ Could not fetch license info:', e.response?.data?.message || e.message);
       setLicenseInfo(null);
     }
   };
@@ -142,15 +183,11 @@ export default function UserManagementPage({ adminId }) {
       const me = meRes.data.user || meRes.data;
       setCurrentUser(me);
       
-      // If adminId prop is provided (from modal), use it directly
+      // ✅ Only fetch if adminId is available
       if (adminId) {
-        console.log('Modal mode: fetching users for admin ID:', adminId);
+        console.log('Fetching users for admin ID:', adminId);
         setFormData(prev => ({ ...prev, adminId: String(adminId) }));
         fetchUsers(adminId);
-      } else if (me.role === 'admin') {
-        // Admin sees only their own users
-        console.log('Admin logged in, fetching users for admin ID:', me.id);
-        fetchUsers(me.id);
       } else if (me.role === 'super_admin') {
         // Super admin selects which admin's users to view
         fetchAdmins();
@@ -160,13 +197,17 @@ export default function UserManagementPage({ adminId }) {
     }
   };
 
-  useEffect(() => { init(); }, [adminId]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { 
+    if (adminId || currentUser) {
+      init(); 
+    }
+  }, [adminId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (!adminId && currentUser?.role === 'super_admin' && selectedAdminId) {
+    if (!propAdminId && currentUser?.role === 'super_admin' && selectedAdminId) {
       fetchUsers(selectedAdminId);
     }
-  }, [currentUser?.role, selectedAdminId, adminId]);
+  }, [currentUser?.role, selectedAdminId, propAdminId]);
 
   useEffect(() => {
     document.body.style.overflow = (showViewModal || showCreateModal) ? 'hidden' : 'unset';
@@ -323,8 +364,8 @@ export default function UserManagementPage({ adminId }) {
     else if (formData.password.length < 6) newErrors.password = 'Password must be at least 6 characters';
     if (!formData.confirmPassword) newErrors.confirmPassword = 'Please confirm password';
     else if (formData.password !== formData.confirmPassword) newErrors.confirmPassword = 'Passwords do not match';
-    // Only validate admin selection if not in modal mode and user is super_admin
-    if (!adminId && currentUser?.role === 'super_admin' && !formData.adminId) newErrors.adminId = 'Select an admin';
+    // Only validate admin selection if adminId not set and user is super_admin
+    if (!adminId && !propAdminId && currentUser?.role === 'super_admin' && !formData.adminId) newErrors.adminId = 'Select an admin';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -334,7 +375,13 @@ export default function UserManagementPage({ adminId }) {
     if (!validateForm()) return;
     
     // 🔒 Client-side license validation
-    const targetAdminId = adminId || (currentUser?.role === 'admin' ? currentUser.id : Number(formData.adminId));
+    // ✅ Always use adminId state
+    if (!adminId) {
+      alert('❌ Admin ID not found. Please login again.');
+      return;
+    }
+    
+    const targetAdminId = adminId;
     const userRole = formData.role || 'user';
     
     // Count users of the same role
@@ -372,7 +419,7 @@ export default function UserManagementPage({ adminId }) {
         email: formData.email,
         password: formData.password,
         role: formData.role || 'user',
-        admin_id: targetAdminId,
+        admin_id: adminId, // ✅ Always use adminId state
         status: formData.status,
         permissions: formData.permissions
       };
@@ -380,14 +427,8 @@ export default function UserManagementPage({ adminId }) {
       const res = await axios.post(`${apiUrl}/admin/users`, payload, { headers: { Authorization: `Bearer ${token}` } });
       alert(res.data?.message || 'User created successfully');
       
-      // Refetch users: use adminId prop if provided, else use current selection
-      if (adminId) {
-        fetchUsers(adminId);
-      } else if (currentUser?.role === 'admin') {
-        fetchUsers(currentUser.id);
-      } else if (selectedAdminId) {
-        fetchUsers(selectedAdminId);
-      }
+      // Refetch users with current adminId
+      fetchUsers(adminId);
       
       setFormData(prev => ({
         ...prev,
@@ -478,7 +519,7 @@ export default function UserManagementPage({ adminId }) {
           )}
         </h1>
         <div className="flex items-center gap-3">
-          {!adminId && currentUser?.role === 'super_admin' && admins.length > 0 && (
+          {!adminId && !propAdminId && currentUser?.role === 'super_admin' && admins.length > 0 && (
             <select
               value={selectedAdminId}
               onChange={(e) => setSelectedAdminId(e.target.value)}
@@ -635,7 +676,7 @@ export default function UserManagementPage({ adminId }) {
                 <FormInput label="Email" name="email" type="email" value={formData.email} onChange={handleChange} icon={<FaEnvelope />} error={errors.email} required />
                 <FormInput label="Password" name="password" type="password" value={formData.password} onChange={handleChange} icon={<FaLock />} error={errors.password} required />
                 <FormInput label="Confirm Password" name="confirmPassword" type="password" value={formData.confirmPassword} onChange={handleChange} icon={<FaLock />} error={errors.confirmPassword} required />
-                {!adminId && currentUser?.role === 'super_admin' && (
+                {!adminId && !propAdminId && currentUser?.role === 'super_admin' && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">Select Admin <span className="text-red-500">*</span></label>
                     <select name="adminId" value={formData.adminId} onChange={handleChange} className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${errors.adminId ? 'border-red-500' : 'border-gray-300'}`}>

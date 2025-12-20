@@ -3,12 +3,35 @@ import { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { selectCurrentUser } from '@/store/slices/authSlice';
 import { FaClock, FaGlobe, FaSave, FaTimes, FaCheck } from 'react-icons/fa';
+import { getUser } from '@/utils/sessionStorage';
 
 export default function AdminTimezonePage() {
   const currentUser = useSelector(selectCurrentUser);
+  const [adminId, setAdminId] = useState(null);
   
-  // Get admin ID from currentUser (try multiple fields)
-  const adminId = currentUser?.admin_id || currentUser?.id || null;
+  // ✅ Initialize adminId from Redux or session with proper fallback
+  useEffect(() => {
+    // Try Redux first
+    if (currentUser && currentUser.admin_id) {
+      setAdminId(currentUser.admin_id);
+      console.log('✅ Using admin_id from Redux:', currentUser.admin_id);
+    } else if (currentUser && currentUser.role === 'admin') {
+      setAdminId(currentUser.id);
+      console.log('✅ Using admin_id from Redux admin user:', currentUser.id);
+    } else {
+      // Fallback to session storage
+      const sessionUser = getUser();
+      if (sessionUser && sessionUser.admin_id) {
+        setAdminId(sessionUser.admin_id);
+        console.log('✅ Using admin_id from session:', sessionUser.admin_id);
+      } else if (sessionUser && sessionUser.role === 'admin') {
+        setAdminId(sessionUser.id);
+        console.log('✅ Using admin_id from session admin user:', sessionUser.id);
+      } else {
+        console.error('❌ No admin_id found in Redux or session');
+      }
+    }
+  }, [currentUser]);
   
   // Default timezones list (in case API fails)
   const defaultTimezones = [
@@ -35,7 +58,8 @@ export default function AdminTimezonePage() {
   useEffect(() => {
     const fetchTimezones = async () => {
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/timezones`);
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+        const response = await fetch(`${apiUrl}/timezones`);
         if (response.ok) {
           const data = await response.json();
           if (data.timezones && Array.isArray(data.timezones)) {
@@ -55,13 +79,16 @@ export default function AdminTimezonePage() {
   useEffect(() => {
     const fetchCurrentTimezone = async () => {
       try {
+        // ✅ Wait for adminId to be set before fetching
         if (!adminId) {
-          console.log('No admin ID found, using default timezone');
-          setLoading(false);
+          console.log('⏭️ Skipping fetch - adminId not set yet');
           return;
         }
+        
+        console.log('🔍 Fetching timezone for admin_id:', adminId);
 
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/admin/timezone/${adminId}`);
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+        const response = await fetch(`${apiUrl}/admin/timezone/${adminId}`);
         if (response.ok) {
           const data = await response.json();
           const tz = data.timezone || '+05:00';
@@ -126,7 +153,8 @@ export default function AdminTimezonePage() {
 
     setSaving(true);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/admin/timezone`, {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${apiUrl}/admin/timezone`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

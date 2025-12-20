@@ -20,6 +20,7 @@ function TicketInfoContent() {
   const [announcementQueue, setAnnouncementQueue] = useState([]); // Queue for pending tickets
   const [broadcastChannel, setBroadcastChannel] = useState(null);
   const [audioUnlocked, setAudioUnlocked] = useState(false); // Auto-enabled in background
+  const [audioEnabled, setAudioEnabled] = useState(false); // Track user interaction for audio
   
   // Counter Display Config from database
   const [leftLogoUrl, setLeftLogoUrl] = useState('');
@@ -367,6 +368,62 @@ function TicketInfoContent() {
     return translations[langCode] || translations['en'];
   };
 
+  // Enable audio on user click
+  const handleEnableAudio = async () => {
+    try {
+      // Initialize AudioContext
+      if (typeof window !== 'undefined') {
+        if (!window.audioContext) {
+          window.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (window.audioContext.state === 'suspended') {
+          await window.audioContext.resume();
+        }
+      }
+      
+      // Play silent audio to unlock
+      const silentAudio = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA');
+      silentAudio.volume = 0.001;
+      await silentAudio.play();
+      silentAudio.pause();
+      
+      setAudioUnlocked(true);
+      setAudioEnabled(true);
+      console.log('✅ Audio enabled by user interaction');
+      return true;
+    } catch (e) {
+      console.error('❌ Failed to enable audio:', e);
+      return false;
+    }
+  };
+
+  // ✅ AUTO-ENABLE audio on page load (for display screens)
+  useEffect(() => {
+    const autoEnableAudio = async () => {
+      console.log('🔊 Auto-enabling audio for display screen...');
+      
+      try {
+        // Try silent enable first
+        const success = await handleEnableAudio();
+        if (success) {
+          console.log('✅ Audio auto-enabled successfully');
+          return;
+        }
+      } catch (e) {
+        console.log('⚠️ Silent enable failed, force enabling...');
+      }
+      
+      // Force enable after short delay (browser may block immediate autoplay)
+      setTimeout(() => {
+        setAudioEnabled(true);
+        setAudioUnlocked(true);
+        console.log('✅ Audio force-enabled after delay');
+      }, 1000);
+    };
+    
+    autoEnableAudio();
+  }, []);
+
   // Silent background audio enabler - no user interaction needed
   const enableAudioSilently = async () => {
     try {
@@ -526,8 +583,6 @@ function TicketInfoContent() {
       console.error('❌ ChatterBox AI Voice service not ready');
       return;
     }
-    
-    // Audio is auto-enabled, no need to check
 
     // Prevent overlapping announcements
     if (isAnnouncing) {

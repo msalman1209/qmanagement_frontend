@@ -5,10 +5,12 @@ import { HiMenu } from 'react-icons/hi';
 import { useAuthContext } from '@/contexts/AuthContext';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { getUser } from '@/utils/sessionStorage';
 
 
-export default function DetailsReportsPage({ adminId }) {
+export default function DetailsReportsPage({ adminId: propAdminId }) {
   const { token, callAPI, user } = useAuthContext();
+  const [effectiveAdminId, setEffectiveAdminId] = useState(null);
   const [filterBy, setFilterBy] = useState('');
   const [filterValue, setFilterValue] = useState('');
   const [status, setStatus] = useState('');
@@ -46,27 +48,44 @@ export default function DetailsReportsPage({ adminId }) {
 
   const [selectedColumns, setSelectedColumns] = useState(allColumns);
 
+  // ✅ Initialize effectiveAdminId from prop or session
+  useEffect(() => {
+    if (propAdminId) {
+      setEffectiveAdminId(propAdminId);
+      console.log('✅ Using admin_id from prop:', propAdminId);
+    } else {
+      const sessionUser = getUser();
+      if (sessionUser && sessionUser.admin_id) {
+        setEffectiveAdminId(sessionUser.admin_id);
+        console.log('✅ Using admin_id from logged-in user:', sessionUser.admin_id);
+      } else if (sessionUser && sessionUser.role === 'admin') {
+        setEffectiveAdminId(sessionUser.id);
+        console.log('✅ Using admin_id from admin user:', sessionUser.id);
+      } else {
+        console.error('❌ No admin_id found in session');
+      }
+    }
+  }, [propAdminId]);
+
   // Fetch tickets data
   useEffect(() => {
-    if (user || adminId) {
+    if (effectiveAdminId) {
       fetchTickets();
       fetchCounters();
       fetchRepresentatives();
     }
-  }, [user, adminId]);
+  }, [effectiveAdminId]);
 
   // Fetch counters for current admin
   const fetchCounters = async () => {
     try {
-      // Use adminId prop if provided (modal mode), else get from current user
-      const targetAdminId = adminId || (user?.role === 'admin' ? user.id : user?.admin_id);
-      
-      if (!targetAdminId) {
-        console.error('No admin ID found');
+      // ✅ Use effectiveAdminId to ensure users only see their admin's counters
+      if (!effectiveAdminId) {
+        console.log('⏭️ Skipping fetchCounters - effectiveAdminId not set yet');
         return;
       }
 
-      const data = await callAPI(`/admin/counters/${targetAdminId}`, {
+      const data = await callAPI(`/admin/counters/${effectiveAdminId}`, {
         method: 'GET',
         validateSession: false
       });
@@ -89,8 +108,12 @@ export default function DetailsReportsPage({ adminId }) {
   // Fetch representatives (users under this admin)
   const fetchRepresentatives = async () => {
     try {
-      // Use admin-specific endpoint if adminId prop is provided
-      const endpoint = adminId ? `/users/admin/${adminId}` : '/admin/users';
+      // ✅ Use effectiveAdminId to ensure users only see their admin's representatives
+      if (!effectiveAdminId) {
+        console.log('⏭️ Skipping fetchRepresentatives - effectiveAdminId not set yet');
+        return;
+      }
+      const endpoint = `/users/admin/${effectiveAdminId}`;
       
       const data = await callAPI(endpoint, {
         method: 'GET',
@@ -115,11 +138,15 @@ export default function DetailsReportsPage({ adminId }) {
         return;
       }
 
-      // Add adminId to query params if provided
-      const queryParams = new URLSearchParams();
-      if (adminId) {
-        queryParams.append('adminId', adminId);
+      // ✅ Always use effectiveAdminId to ensure users only see their admin's tickets
+      if (!effectiveAdminId) {
+        console.log('⏭️ Skipping fetchTickets - effectiveAdminId not set yet');
+        setLoading(false);
+        return;
       }
+
+      const queryParams = new URLSearchParams();
+      queryParams.append('adminId', effectiveAdminId);
       const queryString = queryParams.toString();
       const endpoint = queryString ? `/tickets?${queryString}` : '/tickets';
 
@@ -352,12 +379,17 @@ export default function DetailsReportsPage({ adminId }) {
     try {
       setLoading(true);
       
+      // ✅ Ensure effectiveAdminId is available before filtering
+      if (!effectiveAdminId) {
+        console.error('❌ Cannot filter - no admin_id available');
+        setLoading(false);
+        return;
+      }
+      
       const params = new URLSearchParams();
       
-      // Add adminId first for admin-specific filtering
-      if (adminId) {
-        params.append('adminId', adminId);
-      }
+      // Always add effectiveAdminId for admin-specific filtering
+      params.append('adminId', effectiveAdminId);
       
       if (filterBy && filterValue) {
         if (filterBy === 'counter') {
