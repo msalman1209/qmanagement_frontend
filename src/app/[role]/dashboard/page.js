@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import axios from '@/utils/axiosInstance';
 import { getToken, getUser } from '@/utils/sessionStorage';
 
-export default function UserDashboard() {
+export default function UserDashboard({ adminId = null }) {
   const router = useRouter();
   const [currentTicket, setCurrentTicket] = useState('');
   const [manualTicketId, setManualTicketId] = useState('');
@@ -36,6 +36,11 @@ export default function UserDashboard() {
   const [noPermissions, setNoPermissions] = useState(false); // Track if user has no permissions
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+  
+  // Super Admin mode - when adminId is provided
+  const isSuperAdminMode = adminId !== null;
+  
+  console.log('🔵 Dashboard mode:', isSuperAdminMode ? `Super Admin viewing Admin ${adminId}` : 'Normal User Mode');
   
   console.log('🔵 Dashboard states:', { 
     currentTicket, 
@@ -156,9 +161,16 @@ export default function UserDashboard() {
     };
   }, [router]);
 
-  // ✅ Check counter on mount - CRITICAL for ticket calling
+  // ✅ Check counter on mount - CRITICAL for ticket calling (Skip in Super Admin mode)
   useEffect(() => {
     const checkUserCounter = async () => {
+      // Skip counter check in Super Admin mode
+      if (isSuperAdminMode) {
+        console.log('🔵 Super Admin mode - skipping counter check');
+        setUserCounter('SUPER_ADMIN'); // Set dummy counter for Super Admin
+        return;
+      }
+      
       const token = getToken();
       const user = getUser();
       
@@ -200,7 +212,7 @@ export default function UserDashboard() {
     };
 
     checkUserCounter();
-  }, [router, apiUrl]);
+  }, [router, apiUrl, isSuperAdminMode]);
 
   // Fetch button settings from admin
   useEffect(() => {
@@ -230,13 +242,19 @@ export default function UserDashboard() {
   }, [apiUrl]);
 
   const fetchAssignedTickets = async (showLoader = false) => {
-    if (noPermissions) return; // Block if no permissions
+    if (noPermissions && !isSuperAdminMode) return; // Block if no permissions (but allow in Super Admin mode)
     const token = getToken();
     if (!token) return;
     
     try {
       if (showLoader) setLoading(true);
-      const res = await axios.get(`${apiUrl}/user/tickets/assigned?status=Pending`, {
+      
+      // Super Admin mode - fetch tickets for specific admin
+      const endpoint = isSuperAdminMode 
+        ? `${apiUrl}/user/tickets/assigned?status=Pending&adminId=${adminId}`
+        : `${apiUrl}/user/tickets/assigned?status=Pending`;
+      
+      const res = await axios.get(endpoint, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -267,34 +285,45 @@ export default function UserDashboard() {
         const currentExistsInTransferred = transferred.some(t => t.ticketNumber === currentTicket);
         
         console.log(`📊 Fetched ${tickets.length} regular tickets, ${transferred.length} transferred tickets`);
-        console.log(`📊 Current: ${currentTicket}, In Regular: ${currentExistsInRegular}, In Transferred: ${currentExistsInTransferred}, isCalling: ${isCalling}, isAccepted: ${isAccepted}`);
+        console.log(`📊 Current: "${currentTicket}", In Regular: ${currentExistsInRegular}, In Transferred: ${currentExistsInTransferred}, isCalling: ${isCalling}, isAccepted: ${isAccepted}`);
         
         // Auto-select logic ONLY for regular tickets
         // Transferred tickets are NEVER auto-selected and NEVER auto-switched
         if (currentExistsInTransferred) {
           // If current ticket is in transferred list, ALWAYS keep it (never auto-switch)
-          // Do NOT run any other logic - just keep the ticket as is
           console.log(`✅ Keeping transferred ticket: ${currentTicket} - LOCKED IN`);
-          // DO NOT call setCurrentTicket - it will cause re-render and polling will override it
-          // The ticket is already set, just leave it alone
         } else if (!currentTicket && tickets.length > 0) {
           // No ticket selected, pick first regular one
-          console.log(`🔄 No ticket selected, setting to: ${tickets[0].ticketNumber}`);
+          console.log(`🔄 No ticket selected, auto-selecting first: ${tickets[0].ticketNumber}`);
           setCurrentTicket(tickets[0].ticketNumber);
         } else if (!currentTicket && tickets.length === 0 && transferred.length > 0) {
           // No regular tickets but have transferred tickets, DON'T auto-select
           console.log(`📋 No regular tickets, but have ${transferred.length} transferred tickets available for manual selection`);
-          // Don't clear if user might have selected a transferred ticket
-        } else if (!currentExistsInRegular && !currentExistsInTransferred && !isCalling && !isAccepted && tickets.length > 0) {
-          // Current ticket gone from BOTH lists and user not working on it, pick first available regular ticket
-          console.log(`🔄 Current ticket gone from both lists, switching to: ${tickets[0].ticketNumber}`);
-          setCurrentTicket(tickets[0].ticketNumber);
-        } else if (!currentExistsInRegular && !currentExistsInTransferred && tickets.length === 0 && transferred.length === 0) {
-          // No tickets left in either list
-          console.log(`🔄 No tickets available, clearing current`);
-          setCurrentTicket('');
+        } else if (currentTicket && !currentExistsInRegular && !currentExistsInTransferred) {
+          // Current ticket exists but NOT in either list anymore - someone else called it or it was solved
+          console.log(`❌ Current ticket "${currentTicket}" NOT FOUND in any list - removing from display`);
+          
+          if (!isCalling && !isAccepted) {
+            // User not working on it - switch to next ticket or clear
+            if (tickets.length > 0) {
+              console.log(`🔄 Switching to next available ticket: ${tickets[0].ticketNumber}`);
+              setCurrentTicket(tickets[0].ticketNumber);
+            } else if (transferred.length > 0) {
+              console.log(`📋 No regular tickets, clearing current (${transferred.length} transferred available)`);
+              setCurrentTicket('');
+            } else {
+              console.log(`🔄 No tickets available, clearing current`);
+              setCurrentTicket('');
+            }
+          } else {
+            // User is calling or accepted - keep it temporarily but show warning
+            console.log(`⚠️ Current ticket "${currentTicket}" not in lists but user is working on it - keeping temporarily`);
+          }
         } else if (currentExistsInRegular) {
           console.log(`✅ Keeping current ticket: ${currentTicket} (in regular list)`);
+        } else if (!currentTicket) {
+          // No current ticket and no auto-selection happened
+          console.log(`📭 No current ticket set`);
         }
       }
     } catch (error) {
@@ -384,19 +413,63 @@ export default function UserDashboard() {
       }
     };
 
+    // Listen for ticket call events
+    const callChannel = new BroadcastChannel('ticket-calls');
+    callChannel.onmessage = (event) => {
+      const { ticket, counter, caller } = event.data;
+      console.log('📞 Received call event:', event.data);
+      
+      const userStr = localStorage.getItem('user');
+      const currentUser = userStr ? JSON.parse(userStr) : null;
+      
+      // If someone else called a ticket, remove it from my list
+      if (currentUser && caller && caller !== currentUser.username) {
+        console.log(`🔔 User ${caller} called ticket ${ticket} - removing from my list`);
+        
+        // Remove from unassigned tickets
+        setUnassignedTickets(prev => {
+          const filtered = prev.filter(t => t.ticketNumber !== ticket);
+          console.log(`📋 Removed ${ticket}, remaining: ${filtered.length}`);
+          return filtered;
+        });
+        
+        // Update total count
+        setTotalPending(prev => Math.max(0, prev - 1));
+        
+        // Check if this was my current ticket using callback
+        setCurrentTicket(prev => {
+          if (prev === ticket) {
+            console.log(`⚠️ My current ticket ${ticket} was called by ${caller} - clearing`);
+            // Refresh after state update
+            setTimeout(() => {
+              fetchAssignedTickets(false);
+            }, 100);
+            return ''; // Clear current ticket
+          }
+          return prev; // Keep current ticket if different
+        });
+      }
+    };
+
     return () => {
       lockChannel.close();
       transferChannel.close();
+      callChannel.close();
     };
   }, []);
 
   const fetchAvailableUsers = async () => {
-    if (noPermissions) return; // Block if no permissions
+    if (noPermissions && !isSuperAdminMode) return; // Block if no permissions (but allow in Super Admin mode)
     const token = getToken();
     if (!token) return;
     
     try {
-      const res = await axios.get(`${apiUrl}/user/all`, {
+      // Super Admin mode - fetch users for specific admin
+      const endpoint = isSuperAdminMode 
+        ? `${apiUrl}/user/all?adminId=${adminId}`
+        : `${apiUrl}/user/all`;
+      
+      const res = await axios.get(endpoint, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -411,7 +484,7 @@ export default function UserDashboard() {
   };
 
   const fetchCalledTickets = async () => {
-    if (noPermissions) return; // Block if no permissions
+    if (noPermissions && !isSuperAdminMode) return; // Block if no permissions (but allow in Super Admin mode)
     const token = getToken();
     if (!token) return;
     
@@ -420,10 +493,14 @@ export default function UserDashboard() {
       const userStr = localStorage.getItem('user');
       const currentUser = userStr ? JSON.parse(userStr) : null;
       
-      if (!currentUser?.id) return;
+      if (!currentUser?.id && !isSuperAdminMode) return;
       
       // Fetch tickets called by this user today
-      const res = await axios.get(`${apiUrl}/user/called-tickets/today`, {
+      const endpoint = isSuperAdminMode
+        ? `${apiUrl}/user/called-tickets/today?adminId=${adminId}`
+        : `${apiUrl}/user/called-tickets/today`;
+      
+      const res = await axios.get(endpoint, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -438,13 +515,13 @@ export default function UserDashboard() {
   };
 
   const handleShowCalledTickets = () => {
-    if (noPermissions) return; // Block if no permissions
+    if (noPermissions && !isSuperAdminMode) return; // Block if no permissions (but allow in Super Admin mode)
     fetchCalledTickets();
     setShowCalledDrawer(true);
   };
 
   const loadMoreTickets = () => {
-    if (noPermissions) return; // Block if no permissions
+    if (noPermissions && !isSuperAdminMode) return; // Block if no permissions (but allow in Super Admin mode)
     fetchAssignedTickets(false);
   };
 
@@ -458,7 +535,7 @@ export default function UserDashboard() {
   }, [currentTicket, isAccepted, isCalling]); // Include dependencies so polling respects current state
 
   const handleCall = async () => {
-    if (noPermissions) return; // Block if no permissions
+    if (noPermissions && !isSuperAdminMode) return; // Block if no permissions (but allow in Super Admin mode)
     if (currentTicket && !isCalling) {
       const token = getToken();
       if (!token) return;
@@ -466,31 +543,66 @@ export default function UserDashboard() {
       setIsCalling(true); // Disable button
       
       try {
-        console.log(`🔔 Calling ticket: ${currentTicket}`);
+        console.log(`🔔 Calling ticket: ${currentTicket}${isSuperAdminMode ? ` (Super Admin for Admin ${adminId})` : ''}`);
         
         // Call the ticket and save to backend
+        const requestBody = isSuperAdminMode 
+          ? { ticketNumber: currentTicket, adminId: adminId, isSuperAdmin: true }
+          : { ticketNumber: currentTicket };
+        
         const response = await axios.post(
           `${apiUrl}/user/call-ticket`,
-          { ticketNumber: currentTicket },
+          requestBody,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         
         console.log('✅ Ticket called successfully:', response.data);
         
-        // Prepare ticket data
+        // Prepare ticket data for broadcast
+        // In Super Admin mode, extract counter from ticket number or use response
+        let counterNumber = response.data.counterNo;
+        
+        // If no counter from backend, extract from ticket number (e.g., G-2 → counter is "G")
+        if (!counterNumber || counterNumber === 'ADMIN_PANEL') {
+          const ticketPrefix = currentTicket.split('-')[0];
+          counterNumber = ticketPrefix || 'Counter 1';
+        }
+        
+        // Get admin ID from response (for Super Admin mode)
+        const broadcastAdminId = response.data.adminId || adminId || null;
+        
+        // Get current user info
+        const userStr = localStorage.getItem('user');
+        const currentUser = userStr ? JSON.parse(userStr) : null;
+        
+        console.log('🎯 Counter for broadcast:', counterNumber);
+        console.log('🎫 Ticket number:', currentTicket);
+        console.log('🏢 Admin ID for broadcast:', broadcastAdminId);
+        console.log('👤 Caller:', currentUser?.username);
+        
         const ticketData = {
           ticket: currentTicket,
-          counter: response.data.counterNo || '',
+          counter: counterNumber,
+          adminId: broadcastAdminId,
+          caller: currentUser?.username || 'Unknown',
           timestamp: new Date().getTime()
         };
         
+        console.log('📡 Broadcasting ticket data:', ticketData);
+        console.log('📡 Ticket:', ticketData.ticket);
+        console.log('📡 Counter:', ticketData.counter);
+        console.log('📡 Admin ID:', ticketData.adminId);
+        console.log('📡 Caller:', ticketData.caller);
+        console.log('📡 Timestamp:', ticketData.timestamp);
+        
         // Save to localStorage for persistence
         localStorage.setItem('latest_ticket_call', JSON.stringify(ticketData));
+        console.log('💾 Saved to localStorage');
         
         // Broadcast to ticket_info page using BroadcastChannel
         const channel = new BroadcastChannel('ticket-calls');
         channel.postMessage(ticketData);
-        console.log('📡 Broadcasted ticket data:', ticketData);
+        console.log('✅ Ticket broadcasted to displays via BroadcastChannel');
         channel.close();
         
         // DON'T refresh tickets here - keep the called ticket as current
@@ -500,12 +612,16 @@ export default function UserDashboard() {
       } catch (error) {
         console.error('[UserDashboard] Error calling ticket:', error);
         
-        // Handle specific error: No counter assigned
-        if (error.response?.data?.no_counter) {
+        // Handle specific error: No counter assigned - BUT SKIP IN SUPER ADMIN MODE
+        if (error.response?.data?.no_counter && !isSuperAdminMode) {
           alert(error.response.data.message);
           // Redirect to login to select counter
           // Don't clear session - just redirect
           router.push('/login');
+        } else if (error.response?.data?.no_counter && isSuperAdminMode) {
+          // In Super Admin mode, ignore counter requirement
+          console.warn('⚠️ Counter check bypassed in Super Admin mode');
+          alert('Note: Counter validation skipped in Super Admin mode. Ticket called successfully.');
         } else {
           // Generic error
           alert(`❌ Failed to call ticket: ${error.response?.data?.message || error.message}`);
@@ -518,12 +634,12 @@ export default function UserDashboard() {
   };
 
   const handleNext = () => {
-    if (noPermissions) return; // Block if no permissions
+    if (noPermissions && !isSuperAdminMode) return; // Block if no permissions (but allow in Super Admin mode)
     setShowNextConfirmModal(true);
   };
 
   const handleNextConfirm = async () => {
-    if (noPermissions) return; // Block if no permissions
+    if (noPermissions && !isSuperAdminMode) return; // Block if no permissions (but allow in Super Admin mode)
     const token = getToken();
     if (!token) return;
     
@@ -531,9 +647,13 @@ export default function UserDashboard() {
     
     try {
       // Update current ticket status to Unattended
+      const requestBody = isSuperAdminMode
+        ? { status: 'Unattended', adminId: adminId }
+        : { status: 'Unattended' };
+      
       await axios.put(
         `${apiUrl}/tickets/${currentTicket}`,
-        { status: 'Unattended' },
+        requestBody,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
@@ -556,7 +676,7 @@ export default function UserDashboard() {
   };
 
   const handleAccept = async () => {
-    if (noPermissions) return; // Block if no permissions
+    if (noPermissions && !isSuperAdminMode) return; // Block if no permissions (but allow in Super Admin mode)
     console.log('Accept button clicked');
     const token = getToken();
     if (!token) return;
@@ -567,12 +687,13 @@ export default function UserDashboard() {
       const currentUser = userStr ? JSON.parse(userStr) : null;
       
       // Lock the ticket to current user
+      const requestBody = isSuperAdminMode
+        ? { lock: true, user_id: currentUser?.id, adminId: adminId }
+        : { lock: true, user_id: currentUser?.id };
+      
       const response = await axios.post(
         `${apiUrl}/tickets/${currentTicket}/lock`,
-        { 
-          lock: true,
-          user_id: currentUser?.id
-        },
+        requestBody,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
@@ -612,7 +733,7 @@ export default function UserDashboard() {
   };
 
   const handleSolved = async () => {
-    if (noPermissions) return; // Block if no permissions
+    if (noPermissions && !isSuperAdminMode) return; // Block if no permissions (but allow in Super Admin mode)
     const token = getToken();
     if (!token) return;
     
@@ -624,18 +745,20 @@ export default function UserDashboard() {
       }
       
       // Unlock and update ticket status to Solved
+      const unlockBody = isSuperAdminMode ? { lock: false, adminId: adminId } : { lock: false };
       await axios.post(
         `${apiUrl}/tickets/${currentTicket}/lock`,
-        { lock: false },
+        unlockBody,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
+      const updateBody = isSuperAdminMode 
+        ? { status: 'Solved', serviceTimeSeconds: timer, adminId: adminId }
+        : { status: 'Solved', serviceTimeSeconds: timer };
+      
       await axios.put(
         `${apiUrl}/tickets/${currentTicket}`,
-        { 
-          status: 'Solved',
-          serviceTimeSeconds: timer // Send timer value in seconds
-        },
+        updateBody,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
@@ -665,12 +788,12 @@ export default function UserDashboard() {
   };
 
   const handleNotSolved = () => {
-    if (noPermissions) return; // Block if no permissions
+    if (noPermissions && !isSuperAdminMode) return; // Block if no permissions (but allow in Super Admin mode)
     setShowReasonModal(true);
   };
 
   const handleNotSolvedSubmit = async () => {
-    if (noPermissions) return; // Block if no permissions
+    if (noPermissions && !isSuperAdminMode) return; // Block if no permissions (but allow in Super Admin mode)
     const token = getToken();
     if (!token) return;
     
@@ -684,20 +807,21 @@ export default function UserDashboard() {
       }
       
       // Unlock ticket first
+      const unlockBody = isSuperAdminMode ? { lock: false, adminId: adminId } : { lock: false };
       await axios.post(
         `${apiUrl}/tickets/${currentTicket}/lock`,
-        { lock: false },
+        unlockBody,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
       // Update ticket status to Not Solved with reason
+      const updateBody = isSuperAdminMode
+        ? { status: 'Not Solved', reason: notSolvedReason, serviceTimeSeconds: timer, adminId: adminId }
+        : { status: 'Not Solved', reason: notSolvedReason, serviceTimeSeconds: timer };
+      
       await axios.put(
         `${apiUrl}/tickets/${currentTicket}`,
-        { 
-          status: 'Not Solved',
-          reason: notSolvedReason,
-          serviceTimeSeconds: timer // Send timer value in seconds
-        },
+        updateBody,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
@@ -733,13 +857,17 @@ export default function UserDashboard() {
   };
 
   const handleTransfer = async () => {
-    if (noPermissions) return; // Block if no permissions
+    if (noPermissions && !isSuperAdminMode) return; // Block if no permissions (but allow in Super Admin mode)
     const token = getToken();
     if (!token) return;
     
     try {
       // Fetch all users under same admin
-      const res = await axios.get(`${apiUrl}/user/all`, {
+      const endpoint = isSuperAdminMode
+        ? `${apiUrl}/user/all?adminId=${adminId}`
+        : `${apiUrl}/user/all`;
+      
+      const res = await axios.get(endpoint, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -757,7 +885,7 @@ export default function UserDashboard() {
   };
 
   const handleTransferSubmit = async () => {
-    if (noPermissions) return; // Block if no permissions
+    if (noPermissions && !isSuperAdminMode) return; // Block if no permissions (but allow in Super Admin mode)
     const token = getToken();
     if (!token || !transferUsername.trim()) return;
     
@@ -808,20 +936,21 @@ export default function UserDashboard() {
       console.log('🔄 Transferring ticket:', currentTicket, 'from', transferByUsername, 'to', transferUsername);
       
       // Unlock ticket first
+      const unlockBody = isSuperAdminMode ? { lock: false, adminId: adminId } : { lock: false };
       await axios.post(
         `${apiUrl}/tickets/${currentTicket}/lock`,
-        { lock: false },
+        unlockBody,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
       // Transfer ticket to selected user
+      const transferBody = isSuperAdminMode
+        ? { transferred_to: transferUsername, reason: `Transferred to ${transferUsername}`, transfer_by: transferByUsername, adminId: adminId }
+        : { transferred_to: transferUsername, reason: `Transferred to ${transferUsername}`, transfer_by: transferByUsername };
+      
       await axios.post(
         `${apiUrl}/tickets/${currentTicket}/transfer`,
-        { 
-          transferred_to: transferUsername,
-          reason: `Transferred to ${transferUsername}`,
-          transfer_by: transferByUsername
-        },
+        transferBody,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
@@ -875,7 +1004,7 @@ export default function UserDashboard() {
   };
 
   const handleSelectManual = () => {
-    if (noPermissions) return; // Block if no permissions
+    if (noPermissions && !isSuperAdminMode) return; // Block if no permissions (but allow in Super Admin mode)
     if (!manualTicketId.trim()) {
       alert('Please enter a ticket ID');
       return;
@@ -916,6 +1045,53 @@ export default function UserDashboard() {
     // Ticket not found in either list
     alert(`Ticket "${searchTicketId}" not found in your assigned tickets`);
     setManualTicketId('');
+  };
+
+  // Fresh Ticket - Only for Super Admin
+  const handleFreshTicket = async () => {
+    if (!isSuperAdminMode) return; // Only Super Admin can fresh tickets
+    
+    if (!currentTicket) {
+      alert('No ticket selected to fresh');
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to fresh ticket ${currentTicket}?\n\nThis will reset the ticket to pending status.`)) {
+      return;
+    }
+
+    const token = getToken();
+    if (!token) return;
+
+    try {
+      console.log(`🔄 Freshing ticket: ${currentTicket}`);
+      
+      const response = await axios.post(
+        `${apiUrl}/tickets/${currentTicket}/fresh`,
+        { adminId: adminId },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (response.data.success) {
+        console.log('✅ Ticket freshed successfully');
+        alert('Ticket freshed successfully!');
+        
+        // Reset states
+        setIsAccepted(false);
+        setIsCalling(false);
+        setTimer(0);
+        if (timerInterval) {
+          clearInterval(timerInterval);
+          setTimerInterval(null);
+        }
+        
+        // Refresh tickets list
+        await fetchAssignedTickets(false);
+      }
+    } catch (error) {
+      console.error('Error freshing ticket:', error);
+      alert(`Failed to fresh ticket: ${error.response?.data?.message || error.message}`);
+    }
   };
 
   // Format timer to HH:MM:SS
@@ -1036,6 +1212,15 @@ export default function UserDashboard() {
             >
               Accept
             </button>
+            {/* Fresh Ticket Button - Only for Super Admin */}
+            {isSuperAdminMode && currentTicket && (
+              <button
+                onClick={handleFreshTicket}
+                className="px-10 py-3 rounded-lg text-lg font-medium transition-colors bg-purple-500 hover:bg-purple-600 text-white"
+              >
+                Fresh Ticket
+              </button>
+            )}
           </div>
         ) : (
           <>
@@ -1069,6 +1254,15 @@ export default function UserDashboard() {
                   className={`px-10 py-3 rounded-lg text-lg font-medium transition-colors ${noPermissions ? 'bg-gray-400 cursor-not-allowed text-white' : 'bg-orange-500 hover:bg-orange-600 text-white'}`}
                 >
                   Transfer
+                </button>
+              )}
+              {/* Fresh Ticket Button - Only for Super Admin */}
+              {isSuperAdminMode && (
+                <button
+                  onClick={handleFreshTicket}
+                  className="px-10 py-3 rounded-lg text-lg font-medium transition-colors bg-purple-500 hover:bg-purple-600 text-white"
+                >
+                  Fresh Ticket
                 </button>
               )}
             </div>

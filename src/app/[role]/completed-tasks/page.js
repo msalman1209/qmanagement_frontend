@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import axios from '@/utils/axiosInstance';
 import { getToken, getUser } from '@/utils/sessionStorage';
 
-export default function CompletedTasks() {
+export default function CompletedTasks({ adminId = null }) {
   const router = useRouter();
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -14,6 +14,11 @@ export default function CompletedTasks() {
   const [noPermissions, setNoPermissions] = useState(false); // New state for no-permissions error
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+  
+  // Super Admin mode - when adminId is provided
+  const isSuperAdminMode = adminId !== null;
+  
+  console.log('🔵 CompletedTasks mode:', isSuperAdminMode ? `Super Admin viewing Admin ${adminId}` : 'Normal User Mode');
 
   // 🔄 Fetch fresh permissions from backend and update localStorage
   const refreshUserPermissions = async () => {
@@ -140,7 +145,7 @@ export default function CompletedTasks() {
     const token = getToken();
     console.log('🔐 Token check:', token ? '✅ Token exists' : '❌ No token');
     
-    if (!token) {
+    if (!token && !isSuperAdminMode) {
       console.log('❌ No token - redirecting to login');
       router.push('/login');
       return;
@@ -157,12 +162,17 @@ export default function CompletedTasks() {
       if (filterStartDate) params.append('start_date', filterStartDate);
       if (filterEndDate) params.append('end_date', filterEndDate);
       
+      // Super Admin mode - add adminId
+      if (isSuperAdminMode) {
+        params.append('adminId', adminId);
+      }
+      
       if (params.toString()) {
         url += `?${params.toString()}`;
       }
 
       console.log('📡 Fetching from:', url);
-      console.log('🎫 Headers being sent:', { Authorization: `Bearer ${token.substring(0, 20)}...` });
+      console.log('🎫 Headers being sent:', { Authorization: `Bearer ${token?.substring(0, 20)}...` });
 
       const response = await axios.get(url);
 
