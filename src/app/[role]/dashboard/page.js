@@ -33,6 +33,7 @@ export default function UserDashboard() {
   // Button settings from admin
   const [showNextButton, setShowNextButton] = useState(true);
   const [showTransferButton, setShowTransferButton] = useState(true);
+  const [noPermissions, setNoPermissions] = useState(false); // Track if user has no permissions
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
   
@@ -42,6 +43,118 @@ export default function UserDashboard() {
     transferredCount: transferredTickets.length,
     userCounter 
   });
+
+  // 🔄 Fetch fresh permissions from backend and update localStorage
+  const refreshUserPermissions = async () => {
+    const token = getToken();
+    const user = getUser();
+    
+    if (!token || !user) return;
+
+    try {
+      // Fetch fresh user data from backend
+      const response = await axios.get(`${apiUrl}/auth/me`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      const freshUser = response.data.user || response.data;
+      
+      // Update localStorage with fresh permissions
+      if (freshUser && freshUser.permissions) {
+        const updatedUser = { ...user, permissions: freshUser.permissions };
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+        
+        // 📡 Trigger storage event for other components to update
+        window.dispatchEvent(new Event('storage'));
+        
+        console.log('✅ [refreshUserPermissions] Updated permissions in localStorage:', freshUser.permissions);
+        
+        // Check if permissions changed - if canCallTickets removed, set noPermissions
+        if (!freshUser.permissions.canCallTickets) {
+          console.warn('⚠️ canCallTickets removed - disabling dashboard');
+          setNoPermissions(true);
+        } else {
+          console.log('✅ canCallTickets still active - enabling dashboard');
+          setNoPermissions(false);
+        }
+      }
+    } catch (error) {
+      console.error('❌ Failed to refresh permissions:', error);
+    }
+  };
+
+  // ✅ Check permissions on mount + auto-refresh every 30 seconds
+  useEffect(() => {
+    const checkPermissions = async () => {
+      const token = getToken();
+      const user = getUser();
+      
+      if (!token || !user) {
+        console.error('❌ No token or user found - redirecting to login');
+        router.push('/login');
+        return;
+      }
+
+      // Parse user permissions
+      let permissions = user.permissions;
+      if (typeof permissions === 'string') {
+        try {
+          permissions = JSON.parse(permissions);
+        } catch (e) {
+          console.error('Failed to parse permissions:', e);
+          permissions = null;
+        }
+      }
+
+      // Check if user has canCallTickets permission
+      if (user.role !== 'admin' && user.role !== 'super_admin' && (!permissions || !permissions.canCallTickets)) {
+        console.warn('⚠️ User does not have canCallTickets permission');
+        
+        // SET NO PERMISSIONS FLAG - This will disable all buttons and show error UI
+        setNoPermissions(true);
+        
+        // Check if user has ANY permission at all
+        const hasAnyPermission = permissions && (
+          permissions.canCreateTickets || 
+          permissions.canCallTickets ||
+          permissions.canAccessDashboard ||
+          permissions.canManageUsers ||
+          permissions.canManageTickets ||
+          permissions.canManageQueue ||
+          permissions.canViewReports ||
+          permissions.canManageSettings ||
+          permissions.canManageCounters ||
+          permissions.canManageServices
+        );
+
+        if (!hasAnyPermission) {
+          // No permissions at all - show error message on page
+          alert('❌ You do not have any permissions assigned. Please contact your administrator.');
+          // Don't redirect, just return - will show error in UI
+          return;
+        }
+        
+        // Has other permissions but not canCallTickets - DON'T REDIRECT, just show disabled UI
+        console.log('⚠️ Dashboard access disabled - canCallTickets is false');
+        return;
+      }
+
+      // User has canCallTickets permission - ensure noPermissions is false
+      setNoPermissions(false);
+      console.log('✅ User has canCallTickets permission');
+    };
+
+    checkPermissions();
+    
+    // 🔄 Auto-refresh permissions every 5 seconds (faster for immediate updates)
+    const permissionRefreshInterval = setInterval(() => {
+      refreshUserPermissions();
+    }, 5000); // 5 seconds
+
+    return () => {
+      clearInterval(permissionRefreshInterval);
+    };
+  }, [router]);
 
   // ✅ Check counter on mount - CRITICAL for ticket calling
   useEffect(() => {
@@ -117,6 +230,7 @@ export default function UserDashboard() {
   }, [apiUrl]);
 
   const fetchAssignedTickets = async (showLoader = false) => {
+    if (noPermissions) return; // Block if no permissions
     const token = getToken();
     if (!token) return;
     
@@ -185,6 +299,23 @@ export default function UserDashboard() {
       }
     } catch (error) {
       console.error('[UserDashboard] Error fetching tickets:', error);
+      
+      // Check if error is due to missing permission
+      if (error.response?.status === 403 && error.response?.data?.missing_permission) {
+        console.error('⚠️ Permission denied - redirecting to completed tasks');
+        alert(error.response.data.message || 'You do not have permission to access the dashboard');
+        const user = getUser();
+        let permissions = user?.permissions;
+        if (typeof permissions === 'string') {
+          try { permissions = JSON.parse(permissions); } catch (e) { permissions = null; }
+        }
+        if (permissions?.canCreateTickets) {
+          router.push('/user/completed-tasks');
+        } else {
+          router.push('/login');
+        }
+        return;
+      }
     } finally {
       if (showLoader) setLoading(false);
     }
@@ -260,6 +391,7 @@ export default function UserDashboard() {
   }, []);
 
   const fetchAvailableUsers = async () => {
+    if (noPermissions) return; // Block if no permissions
     const token = getToken();
     if (!token) return;
     
@@ -279,6 +411,7 @@ export default function UserDashboard() {
   };
 
   const fetchCalledTickets = async () => {
+    if (noPermissions) return; // Block if no permissions
     const token = getToken();
     if (!token) return;
     
@@ -305,11 +438,13 @@ export default function UserDashboard() {
   };
 
   const handleShowCalledTickets = () => {
+    if (noPermissions) return; // Block if no permissions
     fetchCalledTickets();
     setShowCalledDrawer(true);
   };
 
   const loadMoreTickets = () => {
+    if (noPermissions) return; // Block if no permissions
     fetchAssignedTickets(false);
   };
 
@@ -323,6 +458,7 @@ export default function UserDashboard() {
   }, [currentTicket, isAccepted, isCalling]); // Include dependencies so polling respects current state
 
   const handleCall = async () => {
+    if (noPermissions) return; // Block if no permissions
     if (currentTicket && !isCalling) {
       const token = getToken();
       if (!token) return;
@@ -382,10 +518,12 @@ export default function UserDashboard() {
   };
 
   const handleNext = () => {
+    if (noPermissions) return; // Block if no permissions
     setShowNextConfirmModal(true);
   };
 
   const handleNextConfirm = async () => {
+    if (noPermissions) return; // Block if no permissions
     const token = getToken();
     if (!token) return;
     
@@ -418,6 +556,7 @@ export default function UserDashboard() {
   };
 
   const handleAccept = async () => {
+    if (noPermissions) return; // Block if no permissions
     console.log('Accept button clicked');
     const token = getToken();
     if (!token) return;
@@ -473,6 +612,7 @@ export default function UserDashboard() {
   };
 
   const handleSolved = async () => {
+    if (noPermissions) return; // Block if no permissions
     const token = getToken();
     if (!token) return;
     
@@ -525,10 +665,12 @@ export default function UserDashboard() {
   };
 
   const handleNotSolved = () => {
+    if (noPermissions) return; // Block if no permissions
     setShowReasonModal(true);
   };
 
   const handleNotSolvedSubmit = async () => {
+    if (noPermissions) return; // Block if no permissions
     const token = getToken();
     if (!token) return;
     
@@ -591,6 +733,7 @@ export default function UserDashboard() {
   };
 
   const handleTransfer = async () => {
+    if (noPermissions) return; // Block if no permissions
     const token = getToken();
     if (!token) return;
     
@@ -614,6 +757,7 @@ export default function UserDashboard() {
   };
 
   const handleTransferSubmit = async () => {
+    if (noPermissions) return; // Block if no permissions
     const token = getToken();
     if (!token || !transferUsername.trim()) return;
     
@@ -731,6 +875,7 @@ export default function UserDashboard() {
   };
 
   const handleSelectManual = () => {
+    if (noPermissions) return; // Block if no permissions
     if (!manualTicketId.trim()) {
       alert('Please enter a ticket ID');
       return;
@@ -801,51 +946,74 @@ export default function UserDashboard() {
   return (
     <div className="p-6 bg-gray-100 min-h-screen">
       <div className="max-w-7xl mx-auto">
-        {/* Top Section */}
-        <div className="flex ml-2 gap-3 mb-6">
-          {/* Load More Tickets Card - Left */}
-          <div className="w-45 rounded-lg">
-            <button
-              onClick={loadMoreTickets}
-              className="w-full bg-green-600 hover:bg-green-700 text-white px-6 py-2.5 rounded-lg text-base font-medium transition-colors mb-3"
-            >
-              Load More Tickets
-            </button>
-            <div className="bg-white rounded-lg shadow-md px-2 py-2 text-center">
-              <p className="text-[15px] leading-[22.95px] text-gray-600 text-center">Total Pending Tickets</p>
-              <p className="text-2xl font-bold mt-2 text-gray-800">{totalPending}</p>
+        {/* No Permissions Error UI */}
+        {noPermissions ? (
+          <div className="flex items-center justify-center min-h-[60vh]">
+            <div className="bg-red-50 border-2 border-red-200 rounded-lg p-8 max-w-md text-center">
+              <div className="bg-red-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <h2 className="text-2xl font-bold text-red-800 mb-3">No Permissions Assigned</h2>
+              <p className="text-gray-700 text-base mb-6">
+                You do not have any permissions assigned to your account. Please contact your administrator to grant you the necessary permissions.
+              </p>
+              <div className="bg-white border border-red-200 rounded p-4 text-sm text-gray-600">
+                <p className="font-medium text-red-700 mb-2">Need Help?</p>
+                <p>Contact your system administrator to request access permissions.</p>
+              </div>
             </div>
           </div>
+        ) : (
+          <>
+            {/* Top Section */}
+            <div className="flex ml-2 gap-3 mb-6">
+              {/* Load More Tickets Card - Left */}
+              <div className="w-45 rounded-lg">
+                <button
+                  onClick={loadMoreTickets}
+                  disabled={noPermissions}
+                  className={`w-full px-6 py-2.5 rounded-lg text-base font-medium transition-colors mb-3 ${noPermissions ? 'bg-gray-400 cursor-not-allowed text-white' : 'bg-green-600 hover:bg-green-700 text-white'}`}
+                >
+                  Load More Tickets
+                </button>
+                <div className="bg-white rounded-lg shadow-md px-2 py-2 text-center">
+                  <p className="text-[15px] leading-[22.95px] text-gray-600 text-center">Total Pending Tickets</p>
+                  <p className="text-2xl font-bold mt-2 text-gray-800">{totalPending}</p>
+                </div>
+              </div>
 
-          {/* Current Ticket ID Card - Center */}
-          <div className="flex-1 bg-white rounded-lg shadow-md py-8 px-6 flex items-center justify-center">
-            <div className="flex items-center gap-4">
-              <h1 className="text-[38px] font-semibold text-gray-700">
-                Current Ticket ID:
-              </h1>
-              <p className="text-[38px] uppercase font-bold text-gray-900">{currentTicket}</p>
+              {/* Current Ticket ID Card - Center */}
+              <div className="flex-1 bg-white rounded-lg shadow-md py-8 px-6 flex items-center justify-center">
+                <div className="flex items-center gap-4">
+                  <h1 className="text-[38px] font-semibold text-gray-700">
+                    Current Ticket ID:
+                  </h1>
+                  <p className="text-[38px] uppercase font-bold text-gray-900">{currentTicket}</p>
+                </div>
+              </div>
+
+              {/* Show Called Tickets Button - Right */}
+              <div className="flex text-[15px] leading-[22.95px] items-start justify-end width-[180px]">
+                <button 
+                  onClick={handleShowCalledTickets}
+                  disabled={noPermissions}
+                  className={`px-8 py-2.5 rounded-lg text-base font-medium transition-colors ${noPermissions ? 'bg-gray-400 cursor-not-allowed text-white' : 'bg-green-500 hover:bg-green-600 text-white'}`}
+                >
+                  Show Called Tickets
+                </button>
+              </div>
             </div>
-          </div>
-
-          {/* Show Called Tickets Button - Right */}
-          <div className="flex text-[15px] leading-[22.95px] items-start justify-end width-[180px]">
-            <button 
-              onClick={handleShowCalledTickets}
-              className="bg-green-500 hover:bg-green-600 text-white px-8 py-2.5 rounded-lg text-base font-medium transition-colors"
-            >
-              Show Called Tickets
-            </button>
-          </div>
-        </div>
 
         {/* Action Buttons */}
         {!isAccepted ? (
           <div className="flex justify-center gap-3 mb-6">
             <button
               onClick={handleCall}
-              disabled={isCalling}
+              disabled={isCalling || noPermissions}
               className={`px-10 py-3 rounded-lg text-lg font-medium transition-colors ${
-                isCalling 
+                isCalling || noPermissions
                   ? 'bg-gray-400 cursor-not-allowed text-white' 
                   : 'bg-green-500 hover:bg-green-600 text-white'
               }`}
@@ -855,14 +1023,16 @@ export default function UserDashboard() {
             {showNextButton && (
               <button
                 onClick={handleNext}
-                className="bg-red-500 hover:bg-red-600 text-white px-10 py-3 rounded-lg text-lg font-medium transition-colors"
+                disabled={noPermissions}
+                className={`px-10 py-3 rounded-lg text-lg font-medium transition-colors ${noPermissions ? 'bg-gray-400 cursor-not-allowed text-white' : 'bg-red-500 hover:bg-red-600 text-white'}`}
               >
                 Next
               </button>
             )}
             <button
               onClick={handleAccept}
-              className="bg-green-600 hover:bg-green-700 text-white px-10 py-3 rounded-lg text-lg font-medium transition-colors"
+              disabled={noPermissions}
+              className={`px-10 py-3 rounded-lg text-lg font-medium transition-colors ${noPermissions ? 'bg-gray-400 cursor-not-allowed text-white' : 'bg-green-600 hover:bg-green-700 text-white'}`}
             >
               Accept
             </button>
@@ -880,20 +1050,23 @@ export default function UserDashboard() {
             <div className="flex justify-center gap-3 mb-6">
               <button
                 onClick={handleSolved}
-                className="bg-green-500 hover:bg-green-600 text-white px-10 py-3 rounded-lg text-lg font-medium transition-colors"
+                disabled={noPermissions}
+                className={`px-10 py-3 rounded-lg text-lg font-medium transition-colors ${noPermissions ? 'bg-gray-400 cursor-not-allowed text-white' : 'bg-green-500 hover:bg-green-600 text-white'}`}
               >
                 Solved
               </button>
               <button
                 onClick={handleNotSolved}
-                className="bg-red-500 hover:bg-red-600 text-white px-10 py-3 rounded-lg text-lg font-medium transition-colors"
+                disabled={noPermissions}
+                className={`px-10 py-3 rounded-lg text-lg font-medium transition-colors ${noPermissions ? 'bg-gray-400 cursor-not-allowed text-white' : 'bg-red-500 hover:bg-red-600 text-white'}`}
               >
                 Not Solved
               </button>
               {showTransferButton && (
                 <button
                   onClick={handleTransfer}
-                  className="bg-orange-500 hover:bg-orange-600 text-white px-10 py-3 rounded-lg text-lg font-medium transition-colors"
+                  disabled={noPermissions}
+                  className={`px-10 py-3 rounded-lg text-lg font-medium transition-colors ${noPermissions ? 'bg-gray-400 cursor-not-allowed text-white' : 'bg-orange-500 hover:bg-orange-600 text-white'}`}
                 >
                   Transfer
                 </button>
@@ -907,13 +1080,15 @@ export default function UserDashboard() {
           <input
             type="text"
             value={manualTicketId}
-            onChange={(e) => setManualTicketId(e.target.value)}
+            onChange={(e) => !noPermissions && setManualTicketId(e.target.value)}
             placeholder="Enter Manual Ticket ID"
-            className="px-5 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent w-72 bg-white text-base"
+            disabled={noPermissions}
+            className={`px-5 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent w-72 text-base ${noPermissions ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
           />
           <button
             onClick={handleSelectManual}
-            className="bg-green-600 hover:bg-green-700 text-white px-10 py-3 rounded-lg text-base font-medium transition-colors"
+            disabled={noPermissions}
+            className={`px-10 py-3 rounded-lg text-base font-medium transition-colors ${noPermissions ? 'bg-gray-400 cursor-not-allowed text-white' : 'bg-green-600 hover:bg-green-700 text-white'}`}
           >
             Select
           </button>
@@ -1039,17 +1214,17 @@ export default function UserDashboard() {
           {unassignedTickets.length > visibleTickets && (
             <div className="px-6 py-4 border-t border-gray-200">
               <button
-                onClick={() => setVisibleTickets(visibleTickets + 5)}
-                className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+                onClick={() => !noPermissions && setVisibleTickets(visibleTickets + 5)}
+                disabled={noPermissions}
+                className={`px-6 py-2 rounded-lg font-medium transition-colors ${noPermissions ? 'bg-gray-400 cursor-not-allowed text-white' : 'bg-green-600 hover:bg-green-700 text-white'}`}
               >
                 Show More
               </button>
             </div>
           )}
         </div>
-      </div>
 
-      {/* Not Solved Reason Modal */}
+        {/* Not Solved Reason Modal */}
       {showReasonModal && (
         <div className="fixed inset-0  bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-2xl p-8 max-w-md w-full mx-4 transform transition-all">
@@ -1251,6 +1426,9 @@ export default function UserDashboard() {
           </div>
         </>
       )}
+      </>
+      )}
+      </div>
     </div>
   );
 }

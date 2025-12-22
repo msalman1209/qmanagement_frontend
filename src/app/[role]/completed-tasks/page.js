@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from '@/utils/axiosInstance';
-import { getToken } from '@/utils/sessionStorage';
+import { getToken, getUser } from '@/utils/sessionStorage';
 
 export default function CompletedTasks() {
   const router = useRouter();
@@ -11,8 +11,129 @@ export default function CompletedTasks() {
   const [completedTasks, setCompletedTasks] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [noPermissions, setNoPermissions] = useState(false); // New state for no-permissions error
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+
+  // 🔄 Fetch fresh permissions from backend and update localStorage
+  const refreshUserPermissions = async () => {
+    const token = getToken();
+    const user = getUser();
+    
+    if (!token || !user) return;
+
+    try {
+      // Fetch fresh user data from backend
+      const response = await axios.get(`${apiUrl}/auth/me`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      const freshUser = response.data.user || response.data;
+      
+      // Update localStorage with fresh permissions
+      if (freshUser && freshUser.permissions) {
+        const updatedUser = { ...user, permissions: freshUser.permissions };
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+        
+        // 📡 Trigger storage event for other components to update
+        window.dispatchEvent(new Event('storage'));
+        
+        console.log('✅ [refreshUserPermissions] Updated permissions in localStorage:', freshUser.permissions);
+        
+        // Check if permissions changed - if canCreateTickets removed, redirect
+        if (!freshUser.permissions.canCreateTickets) {
+          alert('⚠️ Your permissions have been updated. Completed Tasks access has been removed.');
+          if (freshUser.permissions.canCallTickets) {
+            router.push('/user/dashboard');
+          } else {
+            router.push('/login');
+          }
+        }
+      }
+    } catch (error) {
+      console.error('❌ Failed to refresh permissions:', error);
+    }
+  };
+
+  // ✅ Check permissions on mount + auto-refresh every 30 seconds
+  useEffect(() => {
+    const checkPermissions = () => {
+      const token = getToken();
+      const user = getUser();
+      
+      if (!token || !user) {
+        console.error('❌ No token or user found - redirecting to login');
+        router.push('/login');
+        return false;
+      }
+
+      // Parse user permissions
+      let permissions = user.permissions;
+      if (typeof permissions === 'string') {
+        try {
+          permissions = JSON.parse(permissions);
+        } catch (e) {
+          console.error('Failed to parse permissions:', e);
+          permissions = null;
+        }
+      }
+
+      // Check if user has canCreateTickets permission
+      if (user.role !== 'admin' && user.role !== 'super_admin' && (!permissions || !permissions.canCreateTickets)) {
+        console.warn('⚠️ User does not have canCreateTickets permission');
+        
+        // Check if user has ANY permission at all
+        const hasAnyPermission = permissions && (
+          permissions.canCreateTickets || 
+          permissions.canCallTickets ||
+          permissions.canAccessDashboard ||
+          permissions.canManageUsers ||
+          permissions.canManageTickets ||
+          permissions.canManageQueue ||
+          permissions.canViewReports ||
+          permissions.canManageSettings ||
+          permissions.canManageCounters ||
+          permissions.canManageServices
+        );
+
+        if (!hasAnyPermission) {
+          // No permissions at all - show error message on page
+          alert('❌ You do not have any permissions assigned. Please contact your administrator.');
+          setNoPermissions(true); // Set flag to show error UI
+          // Don't redirect, just return - will show error in UI
+          return false;
+        }
+        
+        // Has other permissions but not canCreateTickets
+        alert('You do not have permission to access completed tasks. You need "Completed Task" permission.');
+        
+        // Check if user has call tickets permission and redirect there
+        if (permissions && permissions.canCallTickets) {
+          router.push('/user/dashboard');
+        } else {
+          router.push('/login');
+        }
+        return false;
+      }
+
+      console.log('✅ User has canCreateTickets permission');
+      return true;
+    };
+
+    if (checkPermissions()) {
+      // Only fetch tickets if user has permission
+      fetchCompletedTickets();
+    }
+    
+    // 🔄 Auto-refresh permissions every 5 seconds (faster for immediate updates)
+    const permissionRefreshInterval = setInterval(() => {
+      refreshUserPermissions();
+    }, 5000); // 5 seconds
+
+    return () => {
+      clearInterval(permissionRefreshInterval);
+    };
+  }, [router]);
 
   // Fetch completed tickets
   const fetchCompletedTickets = async (filterStartDate = '', filterEndDate = '') => {
@@ -75,6 +196,24 @@ export default function CompletedTasks() {
           method: err.config?.method
         }
       });
+      
+      // Check if error is due to missing permission
+      if (err.response?.status === 403 && err.response?.data?.missing_permission) {
+        console.error('⚠️ Permission denied - redirecting to dashboard');
+        alert(err.response.data.message || 'You do not have permission to view completed tasks');
+        const user = getUser();
+        let permissions = user?.permissions;
+        if (typeof permissions === 'string') {
+          try { permissions = JSON.parse(permissions); } catch (e) { permissions = null; }
+        }
+        if (permissions?.canCallTickets) {
+          router.push('/user/dashboard');
+        } else {
+          router.push('/login');
+        }
+        return;
+      }
+      
       const errorMsg = err.response?.data?.message || err.message || 'Failed to load completed tickets';
       console.error('Setting error:', errorMsg);
       setError(errorMsg);
@@ -83,12 +222,6 @@ export default function CompletedTasks() {
       console.log('✅ Loading complete');
     }
   };
-
-  // Load tickets on component mount (all tickets)
-  useEffect(() => {
-    console.log('🚀 Component mounted, fetching completed tickets...');
-    fetchCompletedTickets();
-  }, []);
 
   // Handle filter button click
   const handleFilter = () => {
@@ -147,7 +280,28 @@ export default function CompletedTasks() {
   return (
     <div className="p-6 bg-gray-100 min-h-screen">
       <div className="max-w-7xl mx-auto">
-        <h1 className="text-3xl font-semibold text-gray-700 mb-6">Completed Tickets</h1>
+        {/* No Permissions Error UI */}
+        {noPermissions ? (
+          <div className="flex items-center justify-center min-h-[60vh]">
+            <div className="bg-red-50 border-2 border-red-200 rounded-lg p-8 max-w-md text-center">
+              <div className="bg-red-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <h2 className="text-2xl font-bold text-red-800 mb-3">No Permissions Assigned</h2>
+              <p className="text-gray-700 text-base mb-6">
+                You do not have any permissions assigned to your account. Please contact your administrator to grant you the necessary permissions.
+              </p>
+              <div className="bg-white border border-red-200 rounded p-4 text-sm text-gray-600">
+                <p className="font-medium text-red-700 mb-2">Need Help?</p>
+                <p>Contact your system administrator to request access permissions.</p>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <>
+            <h1 className="text-3xl font-semibold text-gray-700 mb-6">Completed Tickets</h1>
 
         {/* Date Filter */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
@@ -301,6 +455,8 @@ export default function CompletedTasks() {
               </table>
             </div>
           </div>
+        )}
+        </>
         )}
       </div>
     </div>

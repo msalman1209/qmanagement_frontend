@@ -109,6 +109,18 @@ export default function UserManagementPage({ adminId: propAdminId }) {
           username: u.username, 
           isLoggedIn: u.isLoggedIn 
         })));
+        
+        // 🔍 Debug: Log first user's full data including permissions
+        if (list.length > 0) {
+          console.log('📋 [fetchUsers] First user full data:', {
+            id: list[0].id,
+            username: list[0].username,
+            permissions_exists: !!list[0].permissions,
+            permissions_type: typeof list[0].permissions,
+            permissions_value: list[0].permissions
+          });
+        }
+        
         setUsers(list);
         setUserCount(list.length);
       }
@@ -248,18 +260,28 @@ export default function UserManagementPage({ adminId: propAdminId }) {
 
   // Edit helpers
   const handleEdit = (user) => {
+    console.log('🔍 [handleEdit] Raw user object:', user);
+    console.log('🔍 [handleEdit] user.permissions type:', typeof user.permissions);
+    console.log('🔍 [handleEdit] user.permissions value:', user.permissions);
+    
     // Parse permissions if it's a string
     let userPermissions = user.permissions;
     if (typeof userPermissions === 'string') {
       try {
         userPermissions = JSON.parse(userPermissions);
+        console.log('✅ [handleEdit] Parsed permissions from string:', userPermissions);
       } catch (e) {
-        console.error('Failed to parse permissions:', e);
+        console.error('❌ [handleEdit] Failed to parse permissions:', e);
         userPermissions = null;
       }
     }
 
-    setEditForm({
+    console.log('📋 [handleEdit] Final userPermissions:', userPermissions);
+    console.log('🔑 [handleEdit] canCallTickets:', userPermissions?.canCallTickets);
+    console.log('🔑 [handleEdit] canCreateTickets:', userPermissions?.canCreateTickets);
+
+    // ✅ Use exact database values - true stays true, false stays false
+    const editFormData = {
       id: user.id,
       username: user.username,
       email: user.email,
@@ -269,18 +291,21 @@ export default function UserManagementPage({ adminId: propAdminId }) {
       status: user.status,
       adminId: user.admin_id ? String(user.admin_id) : '',
       permissions: {
-        canCreateTickets: userPermissions?.canCreateTickets ?? true,
-        canViewReports: userPermissions?.canViewReports ?? false,
-        canManageQueue: userPermissions?.canManageQueue ?? false,
-        canCallTickets: userPermissions?.canCallTickets ?? false,
-        canAccessDashboard: userPermissions?.canAccessDashboard ?? false,
-        canManageUsers: userPermissions?.canManageUsers ?? false,
-        canManageTickets: userPermissions?.canManageTickets ?? false,
-        canManageSettings: userPermissions?.canManageSettings ?? false,
-        canManageCounters: userPermissions?.canManageCounters ?? false,
-        canManageServices: userPermissions?.canManageServices ?? false
+        canCreateTickets: userPermissions?.canCreateTickets === true,
+        canViewReports: userPermissions?.canViewReports === true,
+        canManageQueue: userPermissions?.canManageQueue === true,
+        canCallTickets: userPermissions?.canCallTickets === true,
+        canAccessDashboard: userPermissions?.canAccessDashboard === true,
+        canManageUsers: userPermissions?.canManageUsers === true,
+        canManageTickets: userPermissions?.canManageTickets === true,
+        canManageSettings: userPermissions?.canManageSettings === true,
+        canManageCounters: userPermissions?.canManageCounters === true,
+        canManageServices: userPermissions?.canManageServices === true
       }
-    });
+    };
+    
+    console.log('✅ [handleEdit] Setting editForm with permissions:', editFormData.permissions);
+    setEditForm(editFormData);
     setEditErrors({});
     setShowEditModal(true);
   };
