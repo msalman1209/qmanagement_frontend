@@ -401,6 +401,10 @@ function TicketInfoContent() {
     const autoEnableAudio = async () => {
       console.log('🔊 Auto-enabling audio for display screen...');
       
+      // Force enable immediately
+      setAudioEnabled(true);
+      setAudioUnlocked(true);
+      
       try {
         // Try silent enable first
         const success = await handleEnableAudio();
@@ -409,18 +413,25 @@ function TicketInfoContent() {
           return;
         }
       } catch (e) {
-        console.log('⚠️ Silent enable failed, force enabling...');
+        console.log('⚠️ Silent enable failed, audio will play on first announcement');
       }
-      
-      // Force enable after short delay (browser may block immediate autoplay)
-      setTimeout(() => {
-        setAudioEnabled(true);
-        setAudioUnlocked(true);
-        console.log('✅ Audio force-enabled after delay');
-      }, 1000);
     };
     
+    // Enable immediately on mount
     autoEnableAudio();
+    
+    // Also enable on any user interaction (mousemove, scroll, etc)
+    const enableOnInteraction = () => {
+      handleEnableAudio();
+      // Remove listeners after first interaction
+      ['mousemove', 'scroll', 'touchstart', 'click'].forEach(evt => 
+        document.removeEventListener(evt, enableOnInteraction)
+      );
+    };
+    
+    ['mousemove', 'scroll', 'touchstart', 'click'].forEach(evt => 
+      document.addEventListener(evt, enableOnInteraction, { once: true, passive: true })
+    );
   }, []);
 
   // Silent background audio enabler - no user interaction needed
@@ -870,25 +881,29 @@ function TicketInfoContent() {
                   
                   // For NotAllowedError (autoplay blocked by browser)
                   if (error.name === 'NotAllowedError') {
-                    console.log('🔄 AUTOPLAY BLOCKED - Browser requires user interaction');
-                    console.log('💡 Solution: User must click/tap screen once to enable audio');
+                    console.log('🔄 AUTOPLAY BLOCKED - Auto-retrying on next interaction...');
                     
-                    // Try to resume AudioContext first
+                    // Auto-retry with aggressive approach
                     const retryPlay = async () => {
                       try {
-                        // Ensure AudioContext is running
-                        if (window.audioContext && window.audioContext.state === 'suspended') {
-                          await window.audioContext.resume();
-                          console.log('✅ AudioContext resumed');
+                        // Force resume AudioContext
+                        if (window.audioContext) {
+                          if (window.audioContext.state === 'suspended') {
+                            await window.audioContext.resume();
+                          }
+                          if (window.audioContext.state !== 'running') {
+                            window.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                          }
                         }
                         
-                        // Retry play
+                        // Retry play immediately
                         await audio.play();
-                        console.log(`✅ Box ${i + 1} audio playing after retry`);
+                        console.log(`✅ Box ${i + 1} audio playing after auto-retry`);
                         setAudioUnlocked(true);
+                        setAudioEnabled(true);
                       } catch (retryError) {
-                        console.log(`⏭️ Box ${i + 1} skipping - browser policy blocked playback`);
-                        // Still resolve to continue with next language
+                        // Silent fail - continue to next language
+                        console.log(`⏭️ Box ${i + 1} skipped (browser policy)`);
                         if (!isResolved) {
                           isResolved = true;
                           cleanup();
@@ -897,22 +912,23 @@ function TicketInfoContent() {
                       }
                     };
                     
-                    // Setup one-time event listeners for user interaction
-                    const interactionEvents = ['click', 'touchstart', 'keydown'];
+                    // Aggressive retry: multiple attempts
+                    setTimeout(() => retryPlay(), 50);
+                    setTimeout(() => retryPlay(), 200);
+                    setTimeout(() => retryPlay(), 500);
+                    
+                    // Also setup listeners for any page interaction
+                    const interactionEvents = ['mousemove', 'scroll', 'touchstart', 'click', 'keydown'];
                     const handleInteraction = () => {
-                      console.log('👆 User interaction detected, retrying audio...');
+                      retryPlay();
                       interactionEvents.forEach(evt => 
                         document.removeEventListener(evt, handleInteraction)
                       );
-                      retryPlay();
                     };
                     
                     interactionEvents.forEach(evt => 
-                      document.addEventListener(evt, handleInteraction, { once: true })
+                      document.addEventListener(evt, handleInteraction, { once: true, passive: true })
                     );
-                    
-                    // Also try immediate retry (in case audio was already unlocked)
-                    setTimeout(() => retryPlay(), 100);
                   } else {
                     // For other errors, cleanup and continue
                     console.error(`❌ Box ${i + 1} playback error:`, error.message);
