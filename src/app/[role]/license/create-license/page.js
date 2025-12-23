@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useSelector, useDispatch } from 'react-redux';
 import { selectCurrentUser } from '@/store/slices/authSlice';
 import { setLoading, setError, addLicense } from '@/store/slices/licenseSlice';
+import { FaCog, FaUser, FaChartBar, FaEye, FaEyeSlash, FaInfoCircle, FaExclamationTriangle } from 'react-icons/fa';
 
 export default function CreateLicensePage() {
   const router = useRouter();
@@ -148,7 +149,7 @@ export default function CreateLicensePage() {
     <div className="p-6 max-w-4xl mx-auto">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-          <span className="text-green-600">⚙️</span>
+          <FaCog className="text-green-600" />
           Create License
         </h1>
         <p className="text-gray-600 mt-2">Generate a new license for admin</p>
@@ -326,7 +327,7 @@ export default function CreateLicensePage() {
           {/* Admin Account Details */}
         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6">
           <h3 className="text-lg font-semibold text-blue-900 mb-4 flex items-center gap-2">
-            <span>👤</span> Admin Login Credentials
+            <FaUser className="text-blue-600" /> Admin Login Credentials
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -365,7 +366,7 @@ export default function CreateLicensePage() {
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
                 >
-                  {showPassword ? '🙈' : '👁️'}
+                  {showPassword ? <FaEyeSlash /> : <FaEye />}
                 </button>
               </div>
               <p className="text-xs text-gray-500 mt-1">Minimum 6 characters</p>
@@ -388,8 +389,8 @@ export default function CreateLicensePage() {
             </div>
           </div>
           <div className="mt-3 p-3 bg-blue-100 border border-blue-300 rounded-lg">
-            <p className="text-xs text-blue-800">
-              ℹ️ <strong>Note:</strong> Admin will login using <strong>Email</strong> and <strong>Password</strong>. Username is just for display.
+            <p className="text-xs text-blue-800 flex items-center gap-2">
+              <FaInfoCircle className="text-blue-600" /> <strong>Note:</strong> Admin will login using <strong>Email</strong> and <strong>Password</strong>. Username is just for display.
             </p>
           </div>
         </div>
@@ -397,7 +398,7 @@ export default function CreateLicensePage() {
         {/* License Limits Section */}
         <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg p-6">
           <h3 className="text-lg font-semibold text-purple-900 mb-4 flex items-center gap-2">
-            <span>📊</span> License Limits & Restrictions
+            <FaChartBar className="text-purple-600" /> License Limits & Restrictions
           </h3>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -446,7 +447,7 @@ export default function CreateLicensePage() {
               <p className="text-xs text-gray-500 mt-1">Maximum reception role users allowed</p>
             </div>
 
-            <div>
+            {/* <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Max Ticket Info Users
               </label>
@@ -475,7 +476,7 @@ export default function CreateLicensePage() {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
               />
               <p className="text-xs text-gray-500 mt-1">Sessions for reception role (1-5)</p>
-            </div>
+            </div> */}
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -493,14 +494,17 @@ export default function CreateLicensePage() {
               <p className="text-xs text-gray-500 mt-1">Sessions for ticket_info screen (1-5)</p>
             </div>
           </div>
-
+{/* 
           <div className="mt-4 p-4 bg-yellow-50 border border-yellow-300 rounded-lg">
-            <p className="text-xs text-yellow-900">
-              ⚠️ <strong>Session Limit Warning:</strong> If a user exceeds session limit, they must either:
-              <br/>• Contact tech support to increase session limit
-              <br/>• Delete previous sessions to free up space
+            <p className="text-xs text-yellow-900 flex items-start gap-2">
+              <FaExclamationTriangle className="text-yellow-600 mt-0.5 flex-shrink-0" /> 
+              <span>
+                <strong>Session Limit Warning:</strong> If a user exceeds session limit, they must either:
+                <br/>• Contact tech support to increase session limit
+                <br/>• Delete previous sessions to free up space
+              </span>
             </p>
-          </div>
+          </div> */}
         </div>
 
         {/* License Key */}

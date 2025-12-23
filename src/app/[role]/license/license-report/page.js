@@ -4,6 +4,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { selectCurrentUser } from '@/store/slices/authSlice';
 import { setLicenseReport, selectLicenseReport } from '@/store/slices/licenseSlice';
 import { useRouter } from 'next/navigation';
+import { FaEye, FaEdit, FaPause, FaPlay, FaBuilding, FaImage, FaClipboardList, FaChartBar, FaFileAlt, FaCheckCircle, FaPauseCircle, FaTimesCircle, FaExclamationTriangle, FaTimes, FaUpload, FaSave } from 'react-icons/fa';
 
 
 export default function LicenseReportPage() {
@@ -254,17 +255,17 @@ export default function LicenseReportPage() {
               }
             `}</style>
             {/* Modal Header */}
-            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-6 sticky top-0 z-10">
+            <div className="bg-gradient-to-r from-green-600 to-emerald-600 text-white p-6 sticky top-0 z-10">
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-2xl font-bold">Edit License</h2>
-                  <p className="text-indigo-100 mt-1">Update license information</p>
+                  <p className="text-green-100 mt-1">Update license information</p>
                 </div>
                 <button
                   onClick={closeEditModal}
                   className="text-white hover:text-gray-200 rounded-full p-2 transition-colors w-10 h-10 flex items-center justify-center cursor-pointer"
                 >
-                  <span className="text-3xl leading-none">×</span>
+                  <FaTimes className="text-2xl" />
                 </button>
               </div>
             </div>
@@ -284,7 +285,7 @@ export default function LicenseReportPage() {
                       name="company_name"
                       value={editFormData.company_name}
                       onChange={handleEditFormChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
                       required
                     />
                   </div>
@@ -295,7 +296,7 @@ export default function LicenseReportPage() {
                       name="email"
                       value={editFormData.email}
                       onChange={handleEditFormChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
                     />
                   </div>
                   <div>
@@ -305,7 +306,7 @@ export default function LicenseReportPage() {
                       name="phone"
                       value={editFormData.phone}
                       onChange={handleEditFormChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
                     />
                   </div>
                   <div>
@@ -315,7 +316,7 @@ export default function LicenseReportPage() {
                       name="city"
                       value={editFormData.city}
                       onChange={handleEditFormChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
                     />
                   </div>
                   <div>
@@ -325,7 +326,7 @@ export default function LicenseReportPage() {
                       name="country"
                       value={editFormData.country}
                       onChange={handleEditFormChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
                     />
                   </div>
                 </div>
@@ -334,7 +335,7 @@ export default function LicenseReportPage() {
               {/* Company Logo Upload */}
               <div className="bg-purple-50 rounded-lg p-5">
                 <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                  <span>🖼️</span> Company Logo (For Tickets)
+                  <FaImage className="text-purple-600" /> Company Logo (For Tickets)
                 </h3>
                 <p className="text-sm text-gray-600 mb-4">
                   Upload your company logo to display on printed tickets
@@ -352,17 +353,17 @@ export default function LicenseReportPage() {
                         />
                       ) : (
                         <div className="text-center">
-                          <p className="text-gray-400 text-3xl mb-2">📷</p>
+                          <FaImage className="text-gray-400 text-3xl mb-2 mx-auto" />
                           <p className="text-gray-500 text-sm">No logo uploaded</p>
                         </div>
                       )}
                     </div>
                   </div>
 
-                  {/* Upload New Logo */}
+                    {/* Upload New Logo */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Upload New Logo</label>
-                    <div className="border-2 border-dashed border-indigo-300 rounded-lg p-4 h-40 flex flex-col items-center justify-center bg-white">
+                    <div className="border-2 border-dashed border-green-300 rounded-lg p-4 h-40 flex flex-col items-center justify-center bg-white">
                       {logoPreview ? (
                         <img 
                           src={logoPreview} 
@@ -382,7 +383,7 @@ export default function LicenseReportPage() {
                             htmlFor="logo-upload-edit"
                             className="cursor-pointer text-center"
                           >
-                            <div className="text-indigo-400 text-3xl mb-2">⬆️</div>
+                            <FaUpload className="text-green-400 text-3xl mb-2 mx-auto" />
                             <p className="text-gray-600 text-sm">Click to select logo</p>
                             <p className="text-gray-400 text-xs mt-1">Max 5MB</p>
                           </label>
@@ -396,9 +397,9 @@ export default function LicenseReportPage() {
                           setLogoFile(null);
                           setLogoPreview(null);
                         }}
-                        className="mt-2 w-full text-sm text-gray-600 hover:text-red-600 transition-colors"
+                        className="mt-2 w-full text-sm text-gray-600 hover:text-red-600 transition-colors flex items-center justify-center gap-1"
                       >
-                        ❌ Remove selected logo
+                        <FaTimes /> Remove selected logo
                       </button>
                     )}
                   </div>
@@ -417,7 +418,7 @@ export default function LicenseReportPage() {
                       name="license_type"
                       value={editFormData.license_type}
                       onChange={handleEditFormChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
                       required
                     >
                       <option value="trial">Trial</option>
@@ -432,7 +433,7 @@ export default function LicenseReportPage() {
                       name="status"
                       value={editFormData.status}
                       onChange={handleEditFormChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
                       required
                     >
                       <option value="active">Active</option>
@@ -446,7 +447,7 @@ export default function LicenseReportPage() {
                       name="start_date"
                       value={editFormData.start_date}
                       onChange={handleEditFormChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
                       required
                     />
                   </div>
@@ -457,7 +458,7 @@ export default function LicenseReportPage() {
                       name="expiry_date"
                       value={editFormData.expiry_date}
                       onChange={handleEditFormChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
                       required
                     />
                   </div>
@@ -468,7 +469,7 @@ export default function LicenseReportPage() {
                       name="max_users"
                       value={editFormData.max_users}
                       onChange={handleEditFormChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
                       min="1"
                     />
                   </div>
@@ -479,7 +480,7 @@ export default function LicenseReportPage() {
                       name="max_counters"
                       value={editFormData.max_counters}
                       onChange={handleEditFormChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
                       min="1"
                     />
                   </div>
@@ -489,7 +490,7 @@ export default function LicenseReportPage() {
               {/* License Limits & Session Controls */}
               <div className="bg-purple-50 rounded-lg p-5">
                 <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                  <span>📊</span> License Limits & Session Controls
+                  <FaChartBar className="text-purple-600" /> License Limits & Session Controls
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
@@ -499,7 +500,7 @@ export default function LicenseReportPage() {
                       name="max_receptionists"
                       value={editFormData.max_receptionists}
                       onChange={handleEditFormChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
                       min="1"
                     />
                     <p className="text-xs text-gray-500 mt-1">Maximum reception role users</p>
@@ -511,12 +512,12 @@ export default function LicenseReportPage() {
                       name="max_ticket_info_users"
                       value={editFormData.max_ticket_info_users}
                       onChange={handleEditFormChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
                       min="1"
                     />
                     <p className="text-xs text-gray-500 mt-1">Maximum ticket_info screen users</p>
                   </div>
-                  <div>
+                  {/* <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Sessions Per Receptionist</label>
                     <input
                       type="number"
@@ -541,13 +542,13 @@ export default function LicenseReportPage() {
                       max="5"
                     />
                     <p className="text-xs text-gray-500 mt-1">Concurrent sessions (1-5)</p>
-                  </div>
+                  </div> */}
                 </div>
-                <div className="mt-4 p-3 bg-yellow-50 border border-yellow-300 rounded-lg">
+                {/* <div className="mt-4 p-3 bg-yellow-50 border border-yellow-300 rounded-lg">
                   <p className="text-xs text-yellow-900">
                     ⚠️ <strong>Session Limits:</strong> Users must contact tech support to increase limits or delete old sessions
                   </p>
-                </div>
+                </div> */}
               </div>
 
               {/* Modal Footer */}
@@ -555,9 +556,18 @@ export default function LicenseReportPage() {
                 <button
                   type="submit"
                   disabled={uploading}
-                  className="px-6 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium shadow-md hover:shadow-lg disabled:bg-gray-400"
+                  className="px-6 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium shadow-md hover:shadow-lg disabled:bg-gray-400 flex items-center gap-2"
                 >
-                  {uploading ? '⏳ Saving...' : '💾 Save Changes'}
+                  {uploading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <FaSave /> Save Changes
+                    </>
+                  )}
                 </button>
               </div>
             </form>
@@ -574,39 +584,42 @@ export default function LicenseReportPage() {
                 display: none;
               }
             `}</style>
+            
             {/* Modal Header */}
-            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-6 sticky top-0 z-10">
+            <div className="bg-gradient-to-r from-green-600 to-emerald-600 text-white p-6 sticky top-0 z-10">
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-2xl font-bold">License Details</h2>
-                  <p className="text-blue-100 mt-1">Complete information about this license</p>
+                  <p className="text-green-100 mt-1">Complete information about this license</p>
                 </div>
                 <button
                   onClick={closeModal}
                   className="text-white hover:text-gray-200 rounded-full p-2 transition-colors w-10 h-10 flex items-center justify-center cursor-pointer"
                 >
-                  <span className="text-3xl leading-none">×</span>
+                  <FaTimes className="text-2xl" />
                 </button>
               </div>
             </div>
 
             {/* Modal Body */}
             <div className="p-6 space-y-6">
-              {/* License Key Card */}
-              <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-lg p-4">
-                <p className="text-sm text-gray-600 mb-1">License Key</p>
-                <p className="text-2xl font-mono font-bold text-green-700">{selectedLicense.license_key}</p>
-              </div>
-
               {/* Status Badge */}
               <div className="flex items-center gap-4">
-                <span className={`px-4 py-2 text-sm font-semibold rounded-full ${
+                <span className={`px-4 py-2 text-sm font-semibold rounded-full flex items-center gap-2 ${
                   selectedLicense.license_status === 'expired' ? 'bg-red-100 text-red-800' :
                   selectedLicense.license_status === 'expiring_soon' ? 'bg-yellow-100 text-yellow-800' :
                   selectedLicense.status === 'active' ? 'bg-green-100 text-green-800' :
                   'bg-gray-100 text-gray-800'
                 }`}>
-                  {selectedLicense.status === 'active' ? '✅ Active' : '⏸️ Inactive'}
+                  {selectedLicense.status === 'active' ? (
+                    <>
+                      <FaCheckCircle /> Active
+                    </>
+                  ) : (
+                    <>
+                      <FaPauseCircle /> Inactive
+                    </>
+                  )}
                 </span>
                 <span className={`px-4 py-2 text-sm font-semibold rounded-full ${
                   selectedLicense.license_type === 'trial' ? 'bg-purple-100 text-purple-800' :
@@ -764,7 +777,7 @@ export default function LicenseReportPage() {
 
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-          <span className="text-green-600">📊</span>
+          <FaChartBar className="text-green-600" />
           License Report
         </h1>
         <p className="text-gray-600 mt-2">Overview and analytics of all licenses</p>
@@ -779,7 +792,7 @@ export default function LicenseReportPage() {
               <p className="text-3xl font-bold text-gray-800">{stats.total_licenses || 0}</p>
             </div>
             <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-              <span className="text-2xl">📝</span>
+              <FaFileAlt className="text-2xl text-blue-600" />
             </div>
           </div>
         </div>
@@ -791,7 +804,7 @@ export default function LicenseReportPage() {
               <p className="text-3xl font-bold text-green-600">{stats.active_licenses || 0}</p>
             </div>
             <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-              <span className="text-2xl">✅</span>
+              <FaCheckCircle className="text-2xl text-green-600" />
             </div>
           </div>
         </div>
@@ -803,7 +816,7 @@ export default function LicenseReportPage() {
               <p className="text-3xl font-bold text-gray-600">{stats.inactive_licenses || 0}</p>
             </div>
             <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
-              <span className="text-2xl">⏸️</span>
+              <FaPauseCircle className="text-2xl text-gray-600" />
             </div>
           </div>
         </div>
@@ -815,7 +828,7 @@ export default function LicenseReportPage() {
               <p className="text-3xl font-bold text-red-600">{stats.expired_licenses || 0}</p>
             </div>
             <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
-              <span className="text-2xl">❌</span>
+              <FaTimesCircle className="text-2xl text-red-600" />
             </div>
           </div>
         </div>
@@ -827,7 +840,7 @@ export default function LicenseReportPage() {
               <p className="text-3xl font-bold text-yellow-600">{stats.expiring_soon || 0}</p>
             </div>
             <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
-              <span className="text-2xl">⚠️</span>
+              <FaExclamationTriangle className="text-2xl text-yellow-600" />
             </div>
           </div>
         </div>
@@ -939,28 +952,36 @@ export default function LicenseReportPage() {
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => handleView(license.id)}
-                        className="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors shadow-sm"
+                        className="px-3 py-1.5 text-xs font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors shadow-sm flex items-center gap-1"
                         title="View Details"
                       >
-                        👁️ View
+                        <FaEye /> View
                       </button>
                       <button
                         onClick={() => handleEdit(license.id)}
-                        className="px-3 py-1.5 text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors shadow-sm"
+                        className="px-3 py-1.5 text-xs font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition-colors shadow-sm flex items-center gap-1"
                         title="Edit License"
                       >
-                        ✏️ Edit
+                        <FaEdit /> Edit
                       </button>
                       <button
                         onClick={() => handleToggleStatus(license)}
-                        className={`px-3 py-1.5 text-xs font-medium text-white rounded-lg transition-colors shadow-sm ${
+                        className={`px-3 py-1.5 text-xs font-medium text-white rounded-lg transition-colors shadow-sm flex items-center gap-1 ${
                           license.status === 'active'
                             ? 'bg-red-600 hover:bg-red-700'
                             : 'bg-green-600 hover:bg-green-700'
                         }`}
                         title={license.status === 'active' ? 'Deactivate' : 'Activate'}
                       >
-                        {license.status === 'active' ? '⏸️ Deactivate' : '▶️ Activate'}
+                        {license.status === 'active' ? (
+                          <>
+                            <FaPause /> Deactivate
+                          </>
+                        ) : (
+                          <>
+                            <FaPlay /> Activate
+                          </>
+                        )}
                       </button>
                     </div>
                   </td>

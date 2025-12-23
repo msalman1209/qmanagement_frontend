@@ -31,7 +31,8 @@ function TicketInfoContent() {
   const [sliderTimer, setSliderTimer] = useState(5);
   const [tickerContent, setTickerContent] = useState('Welcome to Dubai Economic Department Services');
   
-  const slides = ['/assets/img/33.png', '/assets/img/22.png', '/assets/img/11.png'];
+  // Remove hardcoded slides - images don't exist in production
+  // const slides = ['/assets/img/33.png', '/assets/img/22.png', '/assets/img/11.png'];
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
   // Check authentication on mount
@@ -321,20 +322,17 @@ function TicketInfoContent() {
   // Check ChatterBox AI service status on mount
   useEffect(() => {
     const checkAiVoiceService = async () => {
-      console.log('🔍 Checking ChatterBox AI service at:', `${apiUrl}/voices/health`);
       try {
         const response = await axios.get(`${apiUrl}/voices/health`);
-        console.log('🔍 Health check response:', response.data);
-        if (response.data.status === 'ok') {
+        if (response.data.status === 'ok' && response.data.python_service === 'online') {
           setAiVoiceReady(true);
           console.log('✅ ChatterBox AI Voice service is ready');
         } else {
-          console.warn('⚠️ Service responded but status not ok:', response.data);
+          // Service exists but Python TTS is offline - don't spam console
           setAiVoiceReady(false);
         }
       } catch (error) {
-        console.error('❌ ChatterBox AI Voice service offline:', error.message);
-        console.error('Error details:', error);
+        // Service not available - silently disable voice features
         setAiVoiceReady(false);
       }
     };

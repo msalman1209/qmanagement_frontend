@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth, useAppDispatch } from '@/store/hooks';
 import { setCredentials, setLoading, setError, clearError } from '@/store';
+import { FaLock, FaEnvelope, FaEye, FaEyeSlash, FaShieldAlt, FaExclamationCircle, FaArrowLeft } from 'react-icons/fa';
 
 // Simple toast notification function
 const showToast = (message, type = 'error') => {
@@ -154,11 +155,9 @@ export default function SuperAdminLoginPage() {
           {/* Logo/Header */}
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center w-20 h-20 bg-green-600 rounded-full mb-4 shadow-lg">
-              <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-              </svg>
+              <FaShieldAlt className="w-12 h-12 text-white" />
             </div>
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">🔐 Super Admin</h1>
+            <h1 className="text-3xl font-bold text-gray-800 mb-2">Super Admin</h1>
             <p className="text-gray-600">Secure Access Portal</p>
           </div>
 
@@ -166,9 +165,7 @@ export default function SuperAdminLoginPage() {
             {/* Error Message */}
             {error && (
               <div className="bg-red-50 border-2 border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center gap-2">
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                </svg>
+                <FaExclamationCircle className="w-5 h-5" />
                 <span className="font-semibold">{error}</span>
               </div>
             )}
@@ -180,9 +177,7 @@ export default function SuperAdminLoginPage() {
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
+                  <FaEnvelope className="w-5 h-5 text-gray-400" />
                 </div>
                 <input
                   type="email"
@@ -204,9 +199,7 @@ export default function SuperAdminLoginPage() {
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
+                  <FaLock className="w-5 h-5 text-gray-400" />
                 </div>
                 <input
                   type={showPassword ? 'text' : 'password'}
@@ -247,18 +240,17 @@ export default function SuperAdminLoginPage() {
                 </>
               ) : (
                 <>
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                  🔐 Secure Login
+                  <FaLock className="w-5 h-5" />
+                  Secure Login
                 </>
               )}
             </button>
 
             {/* Warning Notice */}
             <div className="p-3 bg-yellow-50 border-2 border-yellow-200 rounded-lg">
-              <p className="text-yellow-800 text-xs text-center font-semibold">
-                ⚠️ Unauthorized access is prohibited and will be logged.
+              <p className="text-yellow-800 text-xs text-center font-semibold flex items-center justify-center gap-2">
+                <FaExclamationCircle />
+                Unauthorized access is prohibited and will be logged.
               </p>
             </div>
           </form>
@@ -268,9 +260,10 @@ export default function SuperAdminLoginPage() {
         <div className="text-center mt-6 text-gray-600 text-sm">
           <button
             onClick={() => router.push('/login')}
-            className="text-green-600 hover:text-green-700 font-medium transition-colors"
+            className="text-green-600 hover:text-green-700 font-medium transition-colors flex items-center justify-center gap-2 mx-auto"
           >
-            ← Back to Regular Login
+            <FaArrowLeft />
+            Back to Regular Login
           </button>
         </div>
       </div>
