@@ -481,120 +481,7 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
       return;
     }
     
-    // ✅ CHECK: Agar video content type hai AUR uploadedVideo file hai (videoUrl nahi)
-    if (contentType === 'video' && uploadedVideo && !videoUrl) {
-      console.log('🎬 Video file detected, uploading first...');
-      
-      // UPLOAD VIDEO FIRST
-      const fileSizeMB = (uploadedVideo.size / (1024 * 1024)).toFixed(2);
-      const formData = new FormData();
-      formData.append('video', uploadedVideo);
-      formData.append('admin_id', String(adminId));
-      
-      if (!API_URL) {
-        showMessage('error', '❌ API URL not initialized. Please refresh the page.');
-        setLoading(false);
-        return;
-      }
-      
-      try {
-        const uploadUrl = `${API_URL}/counter-display/upload-video`;
-        console.log('📤 Uploading video to:', uploadUrl);
-        
-        const token = getToken();
-        if (!token) {
-          showMessage('error', '❌ Authentication token missing. Please login again.');
-          setLoading(false);
-          return;
-        }
-        
-        showMessage('info', `🔄 Uploading ${fileSizeMB}MB video... Please wait (5-10 minutes)`);
-        
-        const timeoutMs = Math.max(900000, Math.ceil(uploadedVideo.size / (30 * 1024 * 1024)) * 180000);
-        
-        const config = {
-          timeout: timeoutMs,
-          headers: { 
-            'Authorization': `Bearer ${token}`,
-          },
-          maxContentLength: Infinity,
-          maxBodyLength: Infinity,
-          validateStatus: function (status) {
-            return status >= 200 && status < 600;
-          },
-          onUploadProgress: (progressEvent) => {
-            if (progressEvent.total) {
-              const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-              if (percentCompleted % 10 === 0) {
-                showMessage('info', `⏳ Upload: ${percentCompleted}% - Browser window BAND MAT KAREIN!`);
-              }
-            }
-          }
-        };
-        
-        const uploadResponse = await axiosRaw.post(uploadUrl, formData, config);
-        
-        if (uploadResponse.status === 200 && uploadResponse.data.success) {
-          setVideoUrl(uploadResponse.data.videoUrl);
-          showMessage('success', '✅ Video uploaded! Now saving configuration...');
-          console.log('✅ Video uploaded:', uploadResponse.data.videoUrl);
-          
-          // NOW UPDATE CONFIG WITH NEW VIDEO URL
-          const payload = {
-            leftLogoUrl,
-            rightLogoUrl,
-            screenType,
-            contentType,
-            videoUrl: uploadResponse.data.videoUrl, // Use new video URL
-            sliderTimer,
-            tickerContent,
-            selectedImageIds: selectedImages,
-            admin_id: adminId
-          };
-
-          const updateUrl = `${API_URL}/counter-display/config`;
-          console.log('💾 Updating config with new video');
-          const configResponse = await axios.post(updateUrl, payload, {
-            headers: {
-              'Content-Type': 'application/json',
-              ...getAuthHeaders()
-            }
-          });
-          
-          if (configResponse.data.success) {
-            showMessage('success', '✅ Video uploaded aur configuration saved successfully!');
-            console.log('✅ Configuration updated successfully');
-          }
-        } else {
-          const errorMsg = uploadResponse.data?.message || `Upload failed with status ${uploadResponse.status}`;
-          showMessage('error', `❌ ${errorMsg}`);
-          setUploadedVideo(null);
-        }
-      } catch (error) {
-        console.error('❌ Error uploading video:', error);
-        
-        let errorMessage = '❌ Video upload fail ho gaya';
-        
-        if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
-          errorMessage = `🔴 NETWORK ERROR - Backend tak request nahi pahunchi\n\n✅ SOLUTIONS:\n1. Backend logs check karein\n2. Video compress karein (50-100MB)\n3. Stable internet\n4. Server restart`;
-        } else if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
-          errorMessage = `⏱️ TIMEOUT ERROR - Server ne response nahi diya`;
-        } else if (error.response?.status === 413) {
-          errorMessage = `📦 FILE TOO LARGE (413) - Video compress karein`;
-        } else if (error.response?.data?.message) {
-          errorMessage = `❌ ${error.response.data.message}`;
-        }
-        
-        showMessage('error', errorMessage);
-        setUploadedVideo(null);
-      } finally {
-        setLoading(false);
-      }
-      return; // EXIT early after video upload
-    }
-    
-    // ✅ VALIDATION: Video content type but no video
-    if (contentType === 'video' && !videoUrl && !uploadedVideo) {
+    if (contentType === 'video' && !videoUrl) {
       showMessage('error', 'Please upload a video first');
       setLoading(false);
       return;
@@ -606,7 +493,6 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
       return;
     }
     
-    // ✅ NORMAL CONFIG UPDATE (no new video to upload)
     try {
       const payload = {
         leftLogoUrl,
