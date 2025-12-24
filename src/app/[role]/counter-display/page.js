@@ -269,7 +269,7 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
       
       // Warning for large files
       if (file.size > 100 * 1024 * 1024) {
-        if (!confirm(`Video file ${fileSizeMB}MB hai. Upload mein waqt lag sakta hai (2-5 minutes). Continue karein?`)) {
+        if (!confirm(`Video file ${fileSizeMB}MB hai. Upload mein 5-10 minutes lag sakte hain. Browser window ko band mat karein. Continue karein?`)) {
           e.target.value = '';
           return;
         }
@@ -296,26 +296,26 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
         console.log('🔑 Token:', getToken() ? 'Present' : 'Missing');
         showMessage('info', `Uploading ${fileSizeMB}MB video... Kripya intezar karein (2-5 minutes)`);
         
-        // Calculate timeout based on file size (1 minute per 30MB, minimum 5 minutes)
-        const timeoutMs = Math.max(300000, Math.ceil(file.size / (30 * 1024 * 1024)) * 60000);
+        // Calculate timeout based on file size (2 minutes per 30MB, minimum 10 minutes)
+        const timeoutMs = Math.max(600000, Math.ceil(file.size / (30 * 1024 * 1024)) * 120000);
         console.log('⏱️ Upload timeout set to:', (timeoutMs / 60000).toFixed(1), 'minutes');
         
         // Use raw axios to avoid interceptor issues with large files
-        const token = getToken();
+        const token = getToken(); 
         const response = await axiosRaw.post(uploadUrl, formData, {
           timeout: timeoutMs, // Dynamic timeout based on file size
           headers: { 
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'multipart/form-data'
+            'Authorization': `Bearer ${token}`
+            // Don't set Content-Type, let browser set it with boundary
           },
           maxContentLength: Infinity,
           maxBodyLength: Infinity,
           onUploadProgress: (progressEvent) => {
             const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
             console.log('📊 Upload progress:', percentCompleted + '%');
-            // Show progress updates at 25%, 50%, 75%
-            if (percentCompleted === 25 || percentCompleted === 50 || percentCompleted === 75) {
-              showMessage('info', `Upload ho raha hai... ${percentCompleted}% complete`);
+            // Show progress updates every 10%
+            if (percentCompleted % 10 === 0) {
+              showMessage('info', `Upload ho raha hai... ${percentCompleted}% complete - Browser window ko band mat karein!`);
             }
           }
         });
@@ -340,9 +340,11 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
         
         let errorMessage = 'Video upload fail ho gaya';
         if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
-          errorMessage = 'Network error. File bohot bari ho sakti hai ya server limit exceed ho gaya. Chhoti video (50MB se kam) upload karein ya compress karein.';
+          errorMessage = `Network error: Internet connection slow hai ya server timeout ho gaya. Video size: ${fileSizeMB}MB. \n\nSolutions:\n1. Stable internet connection use karein\n2. Video compress karke 100MB se kam karein\n3. Upload ke dauran koi aur heavy download/upload na karein\n4. Dobara try karein`;
+        } else if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+          errorMessage = `Upload timeout: File upload mein bohot waqt lag gaya (${fileSizeMB}MB). Internet slow hai ya file bohot bari hai. Video compress karke dobara try karein.`;
         } else if (error.response?.status === 413) {
-          errorMessage = `File server ke liye bohot bari hai (${fileSizeMB}MB). Pehle video compress karke 50-100MB ki file upload karein.`;
+          errorMessage = `File server ke liye bohot bari hai (${fileSizeMB}MB). Maximum allowed size 500MB hai. Pehle video compress karein.`;
         } else if (error.response?.data?.message) {
           errorMessage = error.response.data.message;
         }

@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Upload Test - Direct Backend Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #4CAF50;
+            padding-bottom: 10px;
+        }
+        .form-group {
+            margin: 20px 0;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #555;
+        }
+        input[type="text"], input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .progress {
+            width: 100%;
+            height: 30px;
+            background: #f0f0f0;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 20px 0;
+            display: none;
+        }
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #8BC34A);
+            width: 0%;
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        .message {
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+            display: none;
+        }
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .message.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .file-info {
+            background: #e7f3ff;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            display: none;
+        }
+        .logs {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+        .log-entry {
+            margin: 5px 0;
+            padding: 3px 0;
+        }
+        .log-error { color: #f48771; }
+        .log-success { color: #89d185; }
+        .log-info { color: #6fb3d2; }
+        .log-warning { color: #d7ba7d; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎬 Video Upload Test Page</h1>
+        <p style="color: #666;">Test direct upload to backend without Next.js frontend</p>
+        
+        <div class="form-group">
+            <label>Backend API URL:</label>
+            <input type="text" id="apiUrl" value="https://queapi.techmanagement.tech/api" placeholder="https://queapi.techmanagement.tech/api">
+            <small style="color: #999;">Change to http://localhost:5000/api for local testing</small>
+        </div>
+
+        <div class="form-group">
+            <label>Authorization Token:</label>
+            <input type="text" id="token" placeholder="Paste your JWT token here">
+            <small style="color: #999;">Get token from browser console: localStorage.getItem('token')</small>
+        </div>
+
+        <div class="form-group">
+            <label>Admin ID:</label>
+            <input type="text" id="adminId" value="1" placeholder="1">
+        </div>
+
+        <div class="form-group">
+            <label>Select Video File (Max 500MB):</label>
+            <input type="file" id="videoFile" accept="video/*">
+        </div>
+
+        <div class="file-info" id="fileInfo"></div>
+
+        <button id="uploadBtn" onclick="uploadVideo()">📤 Upload Video</button>
+        <button onclick="clearLogs()" style="background: #ff9800;">🗑️ Clear Logs</button>
+
+        <div class="progress" id="progress">
+            <div class="progress-bar" id="progressBar">0%</div>
+        </div>
+
+        <div class="message" id="message"></div>
+
+        <div class="logs" id="logs">
+            <div class="log-entry log-info">📋 Console logs will appear here...</div>
+        </div>
+    </div>
+
+    <script>
+        const logContainer = document.getElementById('logs');
+        
+        function addLog(message, type = 'info') {
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            const timestamp = new Date().toLocaleTimeString();
+            entry.textContent = `[${timestamp}] ${message}`;
+            logContainer.appendChild(entry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        function showMessage(text, type = 'info') {
+            const messageEl = document.getElementById('message');
+            messageEl.className = `message ${type}`;
+            messageEl.textContent = text;
+            messageEl.style.display = 'block';
+            addLog(text, type);
+        }
+
+        // File input change handler
+        document.getElementById('videoFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+                const fileInfoEl = document.getElementById('fileInfo');
+                fileInfoEl.innerHTML = `
+                    <strong>📁 Selected File:</strong><br>
+                    Name: ${file.name}<br>
+                    Size: ${sizeMB} MB<br>
+                    Type: ${file.type}
+                `;
+                fileInfoEl.style.display = 'block';
+                addLog(`File selected: ${file.name} (${sizeMB} MB)`, 'info');
+
+                if (file.size > 500 * 1024 * 1024) {
+                    showMessage('⚠️ File size exceeds 500MB limit!', 'error');
+                }
+            }
+        });
+
+        async function uploadVideo() {
+            const apiUrl = document.getElementById('apiUrl').value;
+            const token = document.getElementById('token').value;
+            const adminId = document.getElementById('adminId').value;
+            const fileInput = document.getElementById('videoFile');
+            const file = fileInput.files[0];
+
+            // Validation
+            if (!token) {
+                showMessage('❌ Please enter Authorization Token', 'error');
+                return;
+            }
+
+            if (!file) {
+                showMessage('❌ Please select a video file', 'error');
+                return;
+            }
+
+            const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+            addLog(`🚀 Starting upload: ${file.name} (${sizeMB} MB)`, 'info');
+
+            // Disable upload button
+            const uploadBtn = document.getElementById('uploadBtn');
+            uploadBtn.disabled = true;
+            uploadBtn.textContent = '⏳ Uploading...';
+
+            // Show progress bar
+            const progressEl = document.getElementById('progress');
+            const progressBar = document.getElementById('progressBar');
+            progressEl.style.display = 'block';
+            progressBar.style.width = '0%';
+            progressBar.textContent = '0%';
+
+            // Create FormData
+            const formData = new FormData();
+            formData.append('video', file);
+            formData.append('admin_id', adminId);
+
+            // Calculate timeout (2 minutes per 30MB, minimum 10 minutes)
+            const timeoutMs = Math.max(600000, Math.ceil(file.size / (30 * 1024 * 1024)) * 120000);
+            const timeoutMinutes = (timeoutMs / 60000).toFixed(1);
+            addLog(`⏱️ Timeout set to: ${timeoutMinutes} minutes`, 'info');
+
+            try {
+                const uploadUrl = `${apiUrl}/counter-display/upload-video`;
+                addLog(`📡 Uploading to: ${uploadUrl}`, 'info');
+
+                const response = await axios.post(uploadUrl, formData, {
+                    timeout: timeoutMs,
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                        // Don't set Content-Type, let browser handle it
+                    },
+                    maxContentLength: Infinity,
+                    maxBodyLength: Infinity,
+                    onUploadProgress: (progressEvent) => {
+                        const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                        progressBar.style.width = percentCompleted + '%';
+                        progressBar.textContent = percentCompleted + '%';
+                        
+                        if (percentCompleted % 10 === 0) {
+                            addLog(`📊 Upload progress: ${percentCompleted}%`, 'info');
+                        }
+                    }
+                });
+
+                addLog('✅ Upload completed successfully!', 'success');
+                addLog(`Response: ${JSON.stringify(response.data)}`, 'success');
+                showMessage(`✅ Video uploaded successfully! URL: ${response.data.videoUrl}`, 'success');
+
+            } catch (error) {
+                addLog('❌ Upload failed!', 'error');
+                addLog(`Error: ${error.message}`, 'error');
+                
+                if (error.response) {
+                    addLog(`Status: ${error.response.status}`, 'error');
+                    addLog(`Response: ${JSON.stringify(error.response.data)}`, 'error');
+                }
+
+                let errorMessage = 'Upload failed: ' + error.message;
+                if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
+                    errorMessage = '❌ Network Error: Request failed to reach server. Check:\n1. Backend server is running\n2. API URL is correct\n3. CORS is configured\n4. File size within limits';
+                } else if (error.code === 'ECONNABORTED') {
+                    errorMessage = `❌ Upload Timeout: Upload took longer than ${timeoutMinutes} minutes. Try:\n1. Compress video file\n2. Check internet speed\n3. Try smaller file`;
+                } else if (error.response?.status === 413) {
+                    errorMessage = '❌ File Too Large: Server rejected file. Check backend file size limits.';
+                }
+
+                showMessage(errorMessage, 'error');
+
+            } finally {
+                // Re-enable upload button
+                uploadBtn.disabled = false;
+                uploadBtn.textContent = '📤 Upload Video';
+            }
+        }
+
+        function clearLogs() {
+            logContainer.innerHTML = '<div class="log-entry log-info">📋 Logs cleared...</div>';
+        }
+
+        // Log initial state
+        addLog('✅ Test page loaded', 'success');
+        addLog('Ready to upload videos', 'info');
+    </script>
+</body>
+</html>
