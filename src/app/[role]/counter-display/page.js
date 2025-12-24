@@ -291,13 +291,21 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
       try {
         const uploadUrl = `${API_URL}/counter-display/upload-video`;
         console.log('📤 Uploading video to:', uploadUrl);
-        showMessage('info', `Uploading ${fileSizeMB}MB video... Kripya intezar karein`);
+        console.log('📦 File size:', fileSizeMB, 'MB');
+        showMessage('info', `Uploading ${fileSizeMB}MB video... Kripya intezar karein (2-5 minutes)`);
+        
+        // Calculate timeout based on file size (1 minute per 30MB, minimum 5 minutes)
+        const timeoutMs = Math.max(300000, Math.ceil(file.size / (30 * 1024 * 1024)) * 60000);
+        console.log('⏱️ Upload timeout set to:', (timeoutMs / 60000).toFixed(1), 'minutes');
         
         const response = await axios.post(uploadUrl, formData, {
+          timeout: timeoutMs, // Dynamic timeout based on file size
           headers: { 
             'Content-Type': 'multipart/form-data',
             ...getAuthHeaders()
           },
+          maxContentLength: Infinity,
+          maxBodyLength: Infinity,
           onUploadProgress: (progressEvent) => {
             const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
             console.log('📊 Upload progress:', percentCompleted + '%');
