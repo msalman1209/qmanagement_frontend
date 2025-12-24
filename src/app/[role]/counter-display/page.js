@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import axios from '@/utils/axiosInstance';
 import { getToken, getUser } from '@/utils/sessionStorage';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ||  'http://localhost:5000/api/counter-display';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
 export default function CounterDisplayPage({ adminId: propAdminId }) {
   const router = useRouter();
@@ -95,6 +95,7 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
       }
       
       const url = `${API_URL}/counter-display/config?adminId=${adminId}`;
+      console.log('📡 Fetching config from:', url);
       const response = await axios.get(url, {
         headers: getAuthHeaders()
       });
@@ -144,14 +145,18 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
         return;
       }
       
-      const response = await axios.get(`${API_URL}/user/ticket-info-users?adminId=${adminId}`, {
+      const url = `${API_URL}/user/ticket-info-users?adminId=${adminId}`;
+      console.log('📡 Fetching ticket info users from:', url);
+      const response = await axios.get(url, {
         headers: getAuthHeaders()
       });
       if (response.data.success) {
         setTicketInfoUsers(response.data.users || []);
+        console.log('✅ Fetched', response.data.users?.length || 0, 'ticket info users');
       }
     } catch (error) {
-      console.error('Error fetching ticket info users:', error);
+      console.error('❌ Error fetching ticket info users:', error);
+      console.error('Error response:', error.response?.data);
     }
   };
 
@@ -177,7 +182,9 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
     });
 
     try {
-      const response = await axios.post(`${API_URL}/user/create-ticket-info`, {
+      const url = `${API_URL}/user/create-ticket-info`;
+      console.log('📤 Creating user at:', url);
+      const response = await axios.post(url, {
         ...newUserData,
         admin_id: adminId,
         role: 'ticket_info'
@@ -193,11 +200,13 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
         setShowCreateUserModal(false);
         setNewUserData({ username: '', email: '', password: '' });
         fetchTicketInfoUsers();
+        console.log('✅ User created successfully');
       } else {
         showMessage('error', response.data.message || 'Failed to create user');
       }
     } catch (error) {
-      console.error('Error creating ticket info user:', error);
+      console.error('❌ Error creating ticket info user:', error);
+      console.error('Error response:', error.response?.data);
       showMessage('error', error.response?.data?.message || 'Failed to create user');
     }
   };
@@ -207,17 +216,21 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
     if (!confirm('Are you sure you want to delete this user?')) return;
 
     try {
-      const response = await axios.delete(`${API_URL}/user/${userId}`, {
+      const url = `${API_URL}/user/${userId}`;
+      console.log('🗑️ Deleting user at:', url);
+      const response = await axios.delete(url, {
         headers: getAuthHeaders()
       });
 
       if (response.data.success) {
         showMessage('success', 'User deleted successfully');
         fetchTicketInfoUsers();
+        console.log('✅ User deleted successfully');
       }
     } catch (error) {
-      console.error('Error deleting user:', error);
-      showMessage('error', 'Failed to delete user');
+      console.error('❌ Error deleting user:', error);
+      console.error('Error response:', error.response?.data);
+      showMessage('error', error.response?.data?.message || 'Failed to delete user');
     }
   };
 
@@ -241,6 +254,14 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
   const handleVideoUpload = async (e) => {
     const file = e.target.files[0];
     if (file) {
+      console.log('📹 Video file selected:', file.name, 'Size:', file.size);
+      
+      // Validate file size (e.g., max 500MB)
+      if (file.size > 500 * 1024 * 1024) {
+        showMessage('error', 'Video file is too large. Maximum size is 500MB');
+        return;
+      }
+      
       setUploadedVideo(file);
       
       // Upload immediately
@@ -248,10 +269,15 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
       formData.append('video', file);
       if (adminId) {
         formData.append('admin_id', adminId);
+      } else {
+        showMessage('error', 'Admin ID is missing. Please login again.');
+        return;
       }
       
       try {
-        const response = await axios.post(`${API_URL}/upload-video`, formData, {
+        const uploadUrl = `${API_URL}/counter-display/upload-video`;
+      console.log('📤 Uploading video to:', uploadUrl);
+      const response = await axios.post(uploadUrl, formData, {
           headers: { 
             'Content-Type': 'multipart/form-data',
             ...getAuthHeaders()
@@ -261,10 +287,12 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
         if (response.data.success) {
           setVideoUrl(response.data.videoUrl);
           showMessage('success', 'Video uploaded successfully');
+          console.log('✅ Video uploaded:', response.data.videoUrl);
         }
       } catch (error) {
-        console.error('Error uploading video:', error);
-        showMessage('error', 'Failed to upload video');
+        console.error('❌ Error uploading video:', error);
+        console.error('Error response:', error.response?.data);
+        showMessage('error', error.response?.data?.message || 'Failed to upload video');
       }
     }
   };
@@ -272,6 +300,14 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
   const handleLeftLogoUpload = async (e) => {
     const file = e.target.files[0];
     if (file) {
+      console.log('🖼️ Left logo selected:', file.name);
+      
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        showMessage('error', 'Please select a valid image file');
+        return;
+      }
+      
       setLeftLogo(file);
       
       // Upload immediately
@@ -280,10 +316,15 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
       formData.append('logoType', 'left');
       if (adminId) {
         formData.append('admin_id', adminId);
+      } else {
+        showMessage('error', 'Admin ID is missing. Please login again.');
+        return;
       }
       
       try {
-        const response = await axios.post(`${API_URL}/upload-logo`, formData, {
+        const uploadUrl = `${API_URL}/counter-display/upload-logo`;
+        console.log('📤 Uploading left logo to:', uploadUrl);
+        const response = await axios.post(uploadUrl, formData, {
           headers: { 
             'Content-Type': 'multipart/form-data',
             ...getAuthHeaders()
@@ -293,10 +334,12 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
         if (response.data.success) {
           setLeftLogoUrl(response.data.logoUrl);
           showMessage('success', 'Left logo uploaded successfully');
+          console.log('✅ Left logo uploaded:', response.data.logoUrl);
         }
       } catch (error) {
-        console.error('Error uploading left logo:', error);
-        showMessage('error', 'Failed to upload left logo');
+        console.error('❌ Error uploading left logo:', error);
+        console.error('Error response:', error.response?.data);
+        showMessage('error', error.response?.data?.message || 'Failed to upload left logo');
       }
     }
   };
@@ -304,6 +347,14 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
   const handleRightLogoUpload = async (e) => {
     const file = e.target.files[0];
     if (file) {
+      console.log('🖼️ Right logo selected:', file.name);
+      
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        showMessage('error', 'Please select a valid image file');
+        return;
+      }
+      
       setRightLogo(file);
       
       // Upload immediately
@@ -312,10 +363,15 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
       formData.append('logoType', 'right');
       if (adminId) {
         formData.append('admin_id', adminId);
+      } else {
+        showMessage('error', 'Admin ID is missing. Please login again.');
+        return;
       }
       
       try {
-        const response = await axios.post(`${API_URL}/upload-logo`, formData, {
+        const uploadUrl = `${API_URL}/counter-display/upload-logo`;
+        console.log('📤 Uploading right logo to:', uploadUrl);
+        const response = await axios.post(uploadUrl, formData, {
           headers: { 
             'Content-Type': 'multipart/form-data',
             ...getAuthHeaders()
@@ -325,10 +381,12 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
         if (response.data.success) {
           setRightLogoUrl(response.data.logoUrl);
           showMessage('success', 'Right logo uploaded successfully');
+          console.log('✅ Right logo uploaded:', response.data.logoUrl);
         }
       } catch (error) {
-        console.error('Error uploading right logo:', error);
-        showMessage('error', 'Failed to upload right logo');
+        console.error('❌ Error uploading right logo:', error);
+        console.error('Error response:', error.response?.data);
+        showMessage('error', error.response?.data?.message || 'Failed to upload right logo');
       }
     }
   };
@@ -336,6 +394,15 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
   const handleImagesUpload = async (e) => {
     const files = Array.from(e.target.files);
     if (files.length > 0) {
+      console.log('🖼️ Images selected:', files.length, 'files');
+      
+      // Validate file types
+      const invalidFiles = files.filter(file => !file.type.startsWith('image/'));
+      if (invalidFiles.length > 0) {
+        showMessage('error', 'Please select only image files');
+        return;
+      }
+      
       // Upload images to server
       const formData = new FormData();
       files.forEach(file => {
@@ -343,10 +410,15 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
       });
       if (adminId) {
         formData.append('admin_id', adminId);
+      } else {
+        showMessage('error', 'Admin ID is missing. Please login again.');
+        return;
       }
       
       try {
-        const response = await axios.post(`${API_URL}/upload-images`, formData, {
+        const uploadUrl = `${API_URL}/counter-display/upload-images`;
+        console.log('📤 Uploading images to:', uploadUrl);
+        const response = await axios.post(uploadUrl, formData, {
           headers: { 
             'Content-Type': 'multipart/form-data',
             ...getAuthHeaders()
@@ -363,10 +435,12 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
           
           setSliderImages([...sliderImages, ...uploadedImages]);
           showMessage('success', `${uploadedImages.length} images uploaded successfully`);
+          console.log('✅ Images uploaded:', uploadedImages.length);
         }
       } catch (error) {
-        console.error('Error uploading images:', error);
-        showMessage('error', 'Failed to upload images');
+        console.error('❌ Error uploading images:', error);
+        console.error('Error response:', error.response?.data);
+        showMessage('error', error.response?.data?.message || 'Failed to upload images');
       }
     }
   };
@@ -384,6 +458,25 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
   const handleUpdateContent = async () => {
     setLoading(true);
     
+    // Validate before updating
+    if (!adminId) {
+      showMessage('error', 'Admin ID is missing. Please login again.');
+      setLoading(false);
+      return;
+    }
+    
+    if (contentType === 'video' && !videoUrl) {
+      showMessage('error', 'Please upload a video first');
+      setLoading(false);
+      return;
+    }
+    
+    if (contentType === 'images' && selectedImages.length === 0) {
+      showMessage('error', 'Please select at least one image for the slider');
+      setLoading(false);
+      return;
+    }
+    
     try {
       const payload = {
         leftLogoUrl,
@@ -393,23 +486,27 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
         videoUrl,
         sliderTimer,
         tickerContent,
-        selectedImageIds: selectedImages
+        selectedImageIds: selectedImages,
+        admin_id: adminId
       };
-      
-      if (adminId) {
-        payload.admin_id = adminId;
-      }
 
-      const response = await axios.post(`${API_URL}/counter-display/config`, payload, {
-        headers: getAuthHeaders()
+      const updateUrl = `${API_URL}/counter-display/config`;
+      console.log('💾 Updating config at:', updateUrl, 'Payload:', payload);
+      const response = await axios.post(updateUrl, payload, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders()
+        }
       });
       
       if (response.data.success) {
         showMessage('success', 'Configuration updated successfully!');
+        console.log('✅ Configuration updated successfully');
       }
     } catch (error) {
-      console.error('Error updating configuration:', error);
-      showMessage('error', 'Failed to update configuration');
+      console.error('❌ Error updating configuration:', error);
+      console.error('Error response:', error.response?.data);
+      showMessage('error', error.response?.data?.message || 'Failed to update configuration');
     } finally {
       setLoading(false);
     }
