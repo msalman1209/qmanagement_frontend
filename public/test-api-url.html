@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API URL Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .result {
+            background: #f9f9f9;
+            border: 2px solid #4CAF50;
+            padding: 20px;
+            margin-top: 20px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+        }
+        .error {
+            border-color: #f44336;
+            background: #ffebee;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 API URL Configuration Test</h1>
+        <p>This page tests what API_URL would be set based on current hostname.</p>
+        
+        <button onclick="testApiUrl()">Test API URL</button>
+        
+        <div id="result"></div>
+    </div>
+
+    <script>
+        function testApiUrl() {
+            const resultDiv = document.getElementById('result');
+            
+            let output = '═══════════════════════════════════════════════════\n';
+            output += '🔍 API URL CONFIGURATION TEST\n';
+            output += '═══════════════════════════════════════════════════\n\n';
+            
+            output += '📍 Current Location:\n';
+            output += `   - hostname: ${window.location.hostname}\n`;
+            output += `   - href: ${window.location.href}\n`;
+            output += `   - protocol: ${window.location.protocol}\n`;
+            output += `   - port: ${window.location.port}\n\n`;
+            
+            output += '🧪 Test: Is localhost?\n';
+            output += `   - Result: ${window.location.hostname === 'localhost'}\n\n`;
+            
+            let API_URL;
+            if (window.location.hostname !== 'localhost') {
+                API_URL = 'https://queapi.techmanagement.tech/api';
+                output += '✅ PRODUCTION MODE DETECTED\n';
+                output += `   - API_URL would be: ${API_URL}\n`;
+                output += `   - Upload URL would be: ${API_URL}/counter-display/upload-video\n`;
+            } else {
+                API_URL = 'http://localhost:5000/api';
+                output += '🏠 LOCAL MODE DETECTED\n';
+                output += `   - API_URL would be: ${API_URL}\n`;
+                output += `   - Upload URL would be: ${API_URL}/counter-display/upload-video\n`;
+            }
+            
+            output += '\n═══════════════════════════════════════════════════\n';
+            output += '🧪 Testing API Connection...\n';
+            output += '═══════════════════════════════════════════════════\n\n';
+            
+            resultDiv.className = 'result';
+            resultDiv.textContent = output;
+            
+            // Test if API is reachable
+            fetch(`${API_URL}/health`, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                output += `✅ API Connection: SUCCESS\n`;
+                output += `   - Status: ${data.status}\n`;
+                output += `   - Message: ${data.message}\n`;
+                resultDiv.textContent = output;
+            })
+            .catch(error => {
+                output += `❌ API Connection: FAILED\n`;
+                output += `   - Error: ${error.message}\n`;
+                resultDiv.className = 'result error';
+                resultDiv.textContent = output;
+            });
+        }
+        
+        // Auto-run on page load
+        window.addEventListener('load', () => {
+            setTimeout(testApiUrl, 500);
+        });
+    </script>
+</body>
+</html>
