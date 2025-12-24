@@ -254,15 +254,18 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
   const handleVideoUpload = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      console.log('📹 Video file selected:', file.name, 'Size:', file.size);
+      console.log('📹 Video file selected:', file.name, 'Size:', (file.size / (1024 * 1024)).toFixed(2), 'MB');
       
-      // Validate file size (e.g., max 500MB)
-      if (file.size > 500 * 1024 * 1024) {
-        showMessage('error', 'Video file is too large. Maximum size is 500MB');
+      // Validate file size (max 100MB for better upload reliability)
+      const maxSize = 100 * 1024 * 1024; // 100MB
+      if (file.size > maxSize) {
+        showMessage('error', `Video file is too large. Maximum size is 100MB. Your file is ${(file.size / (1024 * 1024)).toFixed(2)}MB`);
+        e.target.value = ''; // Reset file input
         return;
       }
       
       setUploadedVideo(file);
+      setLoading(true); // Show loading during upload
       
       // Upload immediately
       const formData = new FormData();
@@ -271,16 +274,23 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
         formData.append('admin_id', adminId);
       } else {
         showMessage('error', 'Admin ID is missing. Please login again.');
+        setLoading(false);
         return;
       }
       
       try {
         const uploadUrl = `${API_URL}/counter-display/upload-video`;
-      console.log('📤 Uploading video to:', uploadUrl);
-      const response = await axios.post(uploadUrl, formData, {
+        console.log('📤 Uploading video to:', uploadUrl);
+        showMessage('info', 'Uploading video... Please wait');
+        
+        const response = await axios.post(uploadUrl, formData, {
           headers: { 
             'Content-Type': 'multipart/form-data',
             ...getAuthHeaders()
+          },
+          onUploadProgress: (progressEvent) => {
+            const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+            console.log('📊 Upload progress:', percentCompleted + '%');
           }
         });
         
@@ -292,7 +302,21 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
       } catch (error) {
         console.error('❌ Error uploading video:', error);
         console.error('Error response:', error.response?.data);
-        showMessage('error', error.response?.data?.message || 'Failed to upload video');
+        
+        let errorMessage = 'Failed to upload video';
+        if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
+          errorMessage = 'Network error. File might be too large or server limit exceeded. Try a smaller video (under 50MB)';
+        } else if (error.response?.status === 413) {
+          errorMessage = 'Video file is too large for server. Please use a video under 50MB';
+        } else if (error.response?.data?.message) {
+          errorMessage = error.response.data.message;
+        }
+        
+        showMessage('error', errorMessage);
+        setUploadedVideo(null);
+        e.target.value = ''; // Reset file input
+      } finally {
+        setLoading(false);
       }
     }
   };
@@ -516,15 +540,23 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
     <div className="p-6 bg-gray-50 min-h-screen">
       <h1 className="text-2xl font-semibold text-gray-700 mb-6">Counter Display Management</h1>
       
-      {/* Success/Error Message */}
+      {/* Success/Error/Info Message */}
       {message.text && (
         <div className={`mb-4 p-4 rounded-lg ${
-          message.type === 'success' ? 'bg-green-100 border-2 border-green-500 text-green-700' : 'bg-red-100 border-2 border-red-500 text-red-700'
+          message.type === 'success' 
+            ? 'bg-green-100 border-2 border-green-500 text-green-700' 
+            : message.type === 'info' 
+            ? 'bg-blue-100 border-2 border-blue-500 text-blue-700'
+            : 'bg-red-100 border-2 border-red-500 text-red-700'
         }`}>
           <div className="flex items-center gap-2">
             {message.type === 'success' ? (
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+            ) : message.type === 'info' ? (
+              <svg className="w-5 h-5 animate-spin" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
               </svg>
             ) : (
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">

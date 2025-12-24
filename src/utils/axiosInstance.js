@@ -4,7 +4,7 @@ import { getToken, verifySessionWithBackend, clearSessionData } from './sessionS
 // Create axios instance with base configuration
 const axiosInstance = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api',
-  timeout: 15000, // Increased timeout for slower connections
+  timeout: 300000, // 5 minutes timeout for large file uploads (video files)
   headers: {
     'Content-Type': 'application/json',
     // Note: Accept-Encoding is automatically handled by the browser
