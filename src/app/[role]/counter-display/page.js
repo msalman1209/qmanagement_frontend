@@ -259,17 +259,17 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
       const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
       console.log('📹 Video file selected:', file.name, 'Size:', fileSizeMB, 'MB');
       
-      // Validate file size (max 500MB)
-      const maxSize = 500 * 1024 * 1024; // 500MB
+      // Validate file size (max 200MB for production stability)
+      const maxSize = 200 * 1024 * 1024; // 200MB
       if (file.size > maxSize) {
-        showMessage('error', `Video file bohot bari hai. Maximum size 500MB hai. Aapki file ${fileSizeMB}MB hai. Pehle video ko compress karein.`);
+        showMessage('error', `❌ Video file bohot bari hai!\n\nMaximum size: 200MB\nAapki file: ${fileSizeMB}MB\n\n⚠️ Production server large files handle nahi kar sakta.\nPehle video compress karein:\n• Handbrake software use karein\n• Online compressor: videosmaller.com\n• Target size: 50-150MB`);
         e.target.value = ''; // Reset file input
         return;
       }
       
       // Warning for large files
       if (file.size > 100 * 1024 * 1024) {
-        if (!confirm(`Video file ${fileSizeMB}MB hai. Upload mein 5-10 minutes lag sakte hain. Browser window ko band mat karein. Continue karein?`)) {
+        if (!confirm(`⚠️ IMPORTANT WARNING ⚠️\n\nVideo size: ${fileSizeMB}MB\n\nUpload mein 5-10 minutes lag sakte hain.\n\nKRIPYA:\n✓ Stable WiFi/Ethernet connection use karein\n✓ Browser window BAND MAT KAREIN\n✓ Laptop charging me laga len\n✓ Koi aur download/upload na karein\n\nContinue karein?`)) {
           e.target.value = '';
           return;
         }
@@ -294,40 +294,64 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
         console.log('📤 Uploading video to:', uploadUrl);
         console.log('📦 File size:', fileSizeMB, 'MB');
         console.log('🔑 Token:', getToken() ? 'Present' : 'Missing');
-        showMessage('info', `Uploading ${fileSizeMB}MB video... Kripya intezar karein (2-5 minutes)`);
+        console.log('🌐 API_URL from env:', process.env.NEXT_PUBLIC_API_URL);
+        showMessage('info', `🔄 Uploading ${fileSizeMB}MB video... Please wait (5-10 minutes)`);
         
-        // Calculate timeout based on file size (2 minutes per 30MB, minimum 10 minutes)
-        const timeoutMs = Math.max(600000, Math.ceil(file.size / (30 * 1024 * 1024)) * 120000);
+        // Calculate timeout based on file size (3 minutes per 30MB, minimum 15 minutes for production)
+        const timeoutMs = Math.max(900000, Math.ceil(file.size / (30 * 1024 * 1024)) * 180000);
         console.log('⏱️ Upload timeout set to:', (timeoutMs / 60000).toFixed(1), 'minutes');
         
+        // IMPORTANT: Use environment variable directly to ensure production URL
+        const productionApiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://queapi.techmanagement.tech/api';
+        const finalUploadUrl = `${productionApiUrl}/counter-display/upload-video`;
+        
+        console.log('🎯 Final upload URL:', finalUploadUrl);
+        
         // Use raw axios to avoid interceptor issues with large files
-        const token = getToken(); 
-        const response = await axiosRaw.post(uploadUrl, formData, {
-          timeout: timeoutMs, // Dynamic timeout based on file size
+        const token = getToken();
+        
+        if (!token) {
+          showMessage('error', '❌ Authentication token missing. Please login again.');
+          setLoading(false);
+          setUploadedVideo(null);
+          e.target.value = '';
+          return;
+        }
+        
+        const response = await axiosRaw.post(finalUploadUrl, formData, {
+          timeout: timeoutMs,
           headers: { 
             'Authorization': `Bearer ${token}`
             // Don't set Content-Type, let browser set it with boundary
           },
           maxContentLength: Infinity,
           maxBodyLength: Infinity,
+          validateStatus: function (status) {
+            return status >= 200 && status < 500; // Don't throw for 4xx errors
+          },
           onUploadProgress: (progressEvent) => {
             const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
             console.log('📊 Upload progress:', percentCompleted + '%');
             // Show progress updates every 10%
             if (percentCompleted % 10 === 0) {
-              showMessage('info', `Upload ho raha hai... ${percentCompleted}% complete - Browser window ko band mat karein!`);
+              showMessage('info', `⏳ Upload: ${percentCompleted}% - Browser window BAND MAT KAREIN!`);
             }
           }
         });
         
-        console.log('📥 Server response:', response.data);
+        console.log('📥 Server response status:', response.status);
+        console.log('📥 Server response data:', response.data);
         
-        if (response.data.success) {
+        if (response.status === 200 && response.data.success) {
           setVideoUrl(response.data.videoUrl);
-          showMessage('success', 'Video successfully upload ho gaya! ✅');
+          showMessage('success', '✅ Video successfully upload ho gaya!');
           console.log('✅ Video uploaded:', response.data.videoUrl);
         } else {
-          showMessage('error', response.data.message || 'Video upload fail ho gaya');
+          // Handle non-200 status or success: false
+          const errorMsg = response.data?.message || `Upload failed with status ${response.status}`;
+          showMessage('error', `❌ ${errorMsg}`);
+          setUploadedVideo(null);
+          e.target.value = '';
         }
       } catch (error) {
         console.error('❌ Error uploading video:', error);
@@ -335,18 +359,25 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
           message: error.message,
           code: error.code,
           status: error.response?.status,
-          data: error.response?.data
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          headers: error.response?.headers
         });
         
-        let errorMessage = 'Video upload fail ho gaya';
+        let errorMessage = '❌ Video upload fail ho gaya';
+        
         if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
-          errorMessage = `Network error: Internet connection slow hai ya server timeout ho gaya. Video size: ${fileSizeMB}MB. \n\nSolutions:\n1. Stable internet connection use karein\n2. Video compress karke 100MB se kam karein\n3. Upload ke dauran koi aur heavy download/upload na karein\n4. Dobara try karein`;
+          errorMessage = `🔴 NETWORK ERROR\n\nVideo size: ${fileSizeMB}MB\nBackend tak request nahi pahunchi\n\n🔍 POSSIBLE CAUSES:\n1. Backend server down ho sakta hai\n2. CORS configuration issue\n3. Nginx/Server timeout\n4. Internet connection lost\n5. File size backend accept nahi kar raha\n\n✅ SOLUTIONS:\n1. Backend logs check karein (PM2)\n2. Video compress karke 50-100MB karein\n3. Stable internet connection\n4. Server restart karein\n\n📞 Tech team ko batain!`;
         } else if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
-          errorMessage = `Upload timeout: File upload mein bohot waqt lag gaya (${fileSizeMB}MB). Internet slow hai ya file bohot bari hai. Video compress karke dobara try karein.`;
+          errorMessage = `⏱️ TIMEOUT ERROR\n\nUpload time: ${(timeoutMs/60000).toFixed(1)} minutes\nFile size: ${fileSizeMB}MB\n\n❌ Server ne response nahi diya!\n\n✅ SOLUTIONS:\n1. Video compress karein (target: 50-100MB)\n2. Backend timeout settings check karein\n3. Nginx timeout increase karein\n4. Faster internet connection use karein`;
         } else if (error.response?.status === 413) {
-          errorMessage = `File server ke liye bohot bari hai (${fileSizeMB}MB). Maximum allowed size 500MB hai. Pehle video compress karein.`;
+          errorMessage = `📦 FILE TOO LARGE (413)\n\nFile: ${fileSizeMB}MB\nServer limit: Exceeded\n\n✅ SOLUTIONS:\n1. Video compress karke 100MB se kam karein\n2. Backend limit check: body-parser & multer\n3. Nginx client_max_body_size setting`;
+        } else if (error.response?.status === 401) {
+          errorMessage = `🔒 AUTHENTICATION ERROR (401)\n\nToken expired ya invalid hai.\n\n✅ SOLUTION:\nDobara login karein`;
+        } else if (error.response?.status === 500) {
+          errorMessage = `⚠️ SERVER ERROR (500)\n\nBackend me error aya.\n\n✅ SOLUTION:\n1. Backend logs check karein\n2. PM2 restart karein\n3. Tech team ko batain`;
         } else if (error.response?.data?.message) {
-          errorMessage = error.response.data.message;
+          errorMessage = `❌ ${error.response.data.message}`;
         }
         
         showMessage('error', errorMessage);
