@@ -18,15 +18,23 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
   
   // Set API_URL on component mount (client side only)
   useEffect(() => {
+    console.log('🔍 DEBUGGING API_URL INITIALIZATION:');
+    console.log('   - window.location.hostname:', window.location.hostname);
+    console.log('   - window.location.href:', window.location.href);
+    console.log('   - Is localhost?', window.location.hostname === 'localhost');
+    
     // On production (non-localhost), always use production URL
     if (window.location.hostname !== 'localhost') {
-      setAPI_URL('https://queapi.techmanagement.tech/api');
-      console.log('🌐 Production detected - API_URL set to:', 'https://queapi.techmanagement.tech/api');
+      const productionUrl = 'https://queapi.techmanagement.tech/api';
+      setAPI_URL(productionUrl);
+      console.log('✅ PRODUCTION MODE - API_URL set to:', productionUrl);
+      console.log('   - Upload URL will be:', productionUrl + '/counter-display/upload-video');
     } else {
       // On localhost, use environment variable or fallback
       const localUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
       setAPI_URL(localUrl);
-      console.log('🌐 Local development - API_URL set to:', localUrl);
+      console.log('✅ LOCAL MODE - API_URL set to:', localUrl);
+      console.log('   - Upload URL will be:', localUrl + '/counter-display/upload-video');
     }
   }, []);
   
@@ -335,11 +343,17 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
         // CRITICAL FIX: Always use API_URL which is already set correctly for production/dev
         const uploadUrl = `${API_URL}/counter-display/upload-video`;
         
+        console.log('═══════════════════════════════════════════════════');
+        console.log('🚀 VIDEO UPLOAD DEBUG INFO');
+        console.log('═══════════════════════════════════════════════════');
         console.log('📤 Starting video upload...');
         console.log('🌐 Current API_URL:', API_URL);
-        console.log('🎯 Upload endpoint:', uploadUrl);
+        console.log('🎯 Full Upload endpoint:', uploadUrl);
         console.log('📦 File size:', fileSizeMB, 'MB');
-        console.log('🏠 Current hostname:', typeof window !== 'undefined' ? window.location.hostname : 'SSR');
+        console.log('📁 File name:', file.name);
+        console.log('🏠 Current hostname:', window.location.hostname);
+        console.log('🌍 Full URL:', window.location.href);
+        console.log('═══════════════════════════════════════════════════');
         
         const token = getToken();
         console.log('🔑 Auth Token:', token ? `Present (length: ${token.length})` : '❌ MISSING');
