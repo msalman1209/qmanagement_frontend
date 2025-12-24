@@ -5,7 +5,20 @@ import axios from '@/utils/axiosInstance';
 import axiosRaw from 'axios'; // Raw axios for file uploads
 import { getToken, getUser } from '@/utils/sessionStorage';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+// CRITICAL: Hardcode production URL as fallback for Vercel deployment
+const getApiUrl = () => {
+  // In production/deployment, use the hardcoded URL
+  if (typeof window !== 'undefined' && window.location.hostname !== 'localhost') {
+    return 'https://queapi.techmanagement.tech/api';
+  }
+  // In local development, use environment variable or localhost
+  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+};
+
+const API_URL = getApiUrl();
+
+console.log('🌐 API_URL initialized:', API_URL);
+console.log('🌐 Hostname:', typeof window !== 'undefined' ? window.location.hostname : 'SSR');
 
 export default function CounterDisplayPage({ adminId: propAdminId }) {
   const router = useRouter();
@@ -299,17 +312,17 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
       }
       
       try {
-        // IMPORTANT: Use environment variable directly to ensure production URL
-        const productionApiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://queapi.techmanagement.tech/api';
-        const finalUploadUrl = `${productionApiUrl}/counter-display/upload-video`;
+        // CRITICAL FIX: Always use API_URL which is already set correctly for production/dev
+        const uploadUrl = `${API_URL}/counter-display/upload-video`;
         
-        console.log('📤 Uploading video to:', finalUploadUrl);
+        console.log('📤 Starting video upload...');
+        console.log('🌐 Current API_URL:', API_URL);
+        console.log('🎯 Upload endpoint:', uploadUrl);
         console.log('📦 File size:', fileSizeMB, 'MB');
-        console.log('🌐 API_URL from env:', process.env.NEXT_PUBLIC_API_URL);
-        console.log('🎯 Final upload URL:', finalUploadUrl);
+        console.log('🏠 Current hostname:', typeof window !== 'undefined' ? window.location.hostname : 'SSR');
         
         const token = getToken();
-        console.log('🔑 Token:', token ? `Present (${token.substring(0, 20)}...)` : 'Missing');
+        console.log('🔑 Auth Token:', token ? `Present (length: ${token.length})` : '❌ MISSING');
         
         if (!token) {
           showMessage('error', '❌ Authentication token missing. Please login again.');
@@ -350,14 +363,16 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
           }
         };
         
-        console.log('🚀 Starting upload with config:', {
-          url: finalUploadUrl,
+        console.log('🚀 Axios config prepared:', {
+          url: uploadUrl,
           timeout: `${(timeoutMs / 60000).toFixed(1)} minutes`,
           hasToken: !!token,
+          hasAuthHeader: !!config.headers.Authorization,
           fileSize: `${fileSizeMB}MB`
         });
         
-        const response = await axiosRaw.post(finalUploadUrl, formData, config);
+        console.log('🌐 Making POST request to:', uploadUrl);
+        const response = await axiosRaw.post(uploadUrl, formData, config);
         
         console.log('📥 Server response status:', response.status);
         console.log('📥 Server response data:', response.data);

@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="ur" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔴 PRODUCTION Video Upload Fix - Test Directly</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            direction: rtl;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        .header p {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+        .content {
+            padding: 30px;
+        }
+        .alert {
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-weight: bold;
+            border-right: 5px solid;
+        }
+        .alert-error {
+            background: #fee;
+            color: #c00;
+            border-color: #f00;
+        }
+        .alert-success {
+            background: #efe;
+            color: #0a0;
+            border-color: #0f0;
+        }
+        .alert-info {
+            background: #eef;
+            color: #00a;
+            border-color: #00f;
+        }
+        .form-group {
+            margin-bottom: 25px;
+        }
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #333;
+            font-size: 16px;
+        }
+        input[type="text"], input[type="file"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .btn {
+            padding: 15px 40px;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-block;
+            margin: 5px;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        .btn-danger {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .progress-container {
+            display: none;
+            margin: 20px 0;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 40px;
+            background: #f0f0f0;
+            border-radius: 20px;
+            overflow: hidden;
+            position: relative;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        .logs {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            border-radius: 10px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            direction: ltr;
+            text-align: left;
+        }
+        .log-entry {
+            padding: 5px 0;
+            border-bottom: 1px solid #333;
+        }
+        .log-error { color: #f48771; }
+        .log-success { color: #89d185; }
+        .log-info { color: #6fb3d2; }
+        .log-warning { color: #d7ba7d; }
+        .file-info {
+            background: #e7f3ff;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border-right: 4px solid #2196F3;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .stat-label {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔴 Production Video Upload - Direct Test</h1>
+            <p>Backend ko directly test karein - Vercel frontend bypass</p>
+        </div>
+
+        <div class="content">
+            <div class="alert alert-error">
+                <strong>⚠️ CRITICAL ISSUE:</strong><br>
+                Frontend se backend tak request NAHI ja rahi!<br>
+                Yeh tool direct backend ko test karega.
+            </div>
+
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-label">Backend URL</div>
+                    <div class="stat-value" style="font-size: 14px;">queapi.techmanagement.tech</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Max File Size</div>
+                    <div class="stat-value">250MB</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Timeout</div>
+                    <div class="stat-value">15 min</div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>🔑 Authorization Token (Required):</label>
+                <input type="text" id="token" placeholder="Production token yahan paste karein">
+                <small style="color: #666;">Production site se browser console mein ye run karein: <code>localStorage.getItem('token')</code></small>
+            </div>
+
+            <div class="form-group">
+                <label>👤 Admin ID:</label>
+                <input type="text" id="adminId" value="1">
+            </div>
+
+            <div class="form-group">
+                <label>📹 Video File (Max 200MB recommended):</label>
+                <input type="file" id="videoFile" accept="video/*">
+            </div>
+
+            <div id="fileInfo" class="file-info" style="display: none;"></div>
+
+            <div style="text-align: center; margin: 30px 0;">
+                <button class="btn btn-primary" id="uploadBtn" onclick="uploadVideo()">
+                    📤 Upload Video to Production Backend
+                </button>
+                <button class="btn btn-danger" onclick="clearLogs()">
+                    🗑️ Clear Logs
+                </button>
+            </div>
+
+            <div id="progressContainer" class="progress-container">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill">0%</div>
+                </div>
+            </div>
+
+            <div id="message" style="display: none; margin: 20px 0;"></div>
+
+            <h3 style="margin: 30px 0 15px; color: #333;">📋 Real-Time Logs:</h3>
+            <div class="logs" id="logs"></div>
+        </div>
+    </div>
+
+    <script>
+        const BACKEND_URL = 'https://queapi.techmanagement.tech/api';
+        const logContainer = document.getElementById('logs');
+        
+        function addLog(message, type = 'info') {
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            const timestamp = new Date().toLocaleTimeString('en-US', { hour12: false });
+            entry.textContent = `[${timestamp}] ${message}`;
+            logContainer.appendChild(entry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        function showMessage(text, type = 'info') {
+            const messageEl = document.getElementById('message');
+            messageEl.className = `alert alert-${type}`;
+            messageEl.innerHTML = text;
+            messageEl.style.display = 'block';
+            addLog(text.replace(/<[^>]*>/g, ''), type);
+        }
+
+        function clearLogs() {
+            logContainer.innerHTML = '<div class="log-entry log-info">[' + new Date().toLocaleTimeString() + '] Logs cleared</div>';
+        }
+
+        // File input handler
+        document.getElementById('videoFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+                const fileInfoEl = document.getElementById('fileInfo');
+                fileInfoEl.innerHTML = `
+                    <strong>📁 Selected File:</strong><br>
+                    <strong>Name:</strong> ${file.name}<br>
+                    <strong>Size:</strong> ${sizeMB} MB<br>
+                    <strong>Type:</strong> ${file.type}
+                `;
+                fileInfoEl.style.display = 'block';
+                addLog(`File selected: ${file.name} (${sizeMB} MB)`, 'info');
+
+                if (file.size > 250 * 1024 * 1024) {
+                    showMessage('⚠️ Warning: File bohot bari hai! 250MB se zyada hai. Upload fail ho sakta hai.', 'warning');
+                } else if (file.size > 200 * 1024 * 1024) {
+                    showMessage('⚠️ File 200MB se bari hai. Upload slow hoga (10-15 minutes).', 'warning');
+                }
+            }
+        });
+
+        async function uploadVideo() {
+            const token = document.getElementById('token').value.trim();
+            const adminId = document.getElementById('adminId').value.trim();
+            const fileInput = document.getElementById('videoFile');
+            const file = fileInput.files[0];
+
+            // Validation
+            if (!token) {
+                showMessage('❌ Token required hai! Production site se copy karein.', 'error');
+                return;
+            }
+
+            if (!file) {
+                showMessage('❌ Video file select karein!', 'error');
+                return;
+            }
+
+            if (!adminId) {
+                showMessage('❌ Admin ID enter karein!', 'error');
+                return;
+            }
+
+            const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+            addLog(`🚀 Upload shuru ho raha hai: ${file.name} (${sizeMB} MB)`, 'info');
+
+            // Disable button
+            const uploadBtn = document.getElementById('uploadBtn');
+            uploadBtn.disabled = true;
+            uploadBtn.textContent = '⏳ Upload ho raha hai...';
+
+            // Show progress
+            const progressContainer = document.getElementById('progressContainer');
+            const progressFill = document.getElementById('progressFill');
+            progressContainer.style.display = 'block';
+            progressFill.style.width = '0%';
+            progressFill.textContent = '0%';
+
+            // Create FormData
+            const formData = new FormData();
+            formData.append('video', file);
+            formData.append('admin_id', adminId);
+
+            addLog(`📦 FormData created: video=${file.name}, admin_id=${adminId}`, 'info');
+
+            // Calculate timeout
+            const timeoutMs = Math.max(900000, Math.ceil(file.size / (30 * 1024 * 1024)) * 180000);
+            const timeoutMinutes = (timeoutMs / 60000).toFixed(1);
+            addLog(`⏱️ Timeout: ${timeoutMinutes} minutes`, 'info');
+
+            const uploadUrl = `${BACKEND_URL}/counter-display/upload-video`;
+            addLog(`🌐 Upload URL: ${uploadUrl}`, 'info');
+            addLog(`🔑 Token length: ${token.length} characters`, 'info');
+
+            try {
+                const response = await axios.post(uploadUrl, formData, {
+                    timeout: timeoutMs,
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    maxContentLength: Infinity,
+                    maxBodyLength: Infinity,
+                    onUploadProgress: (progressEvent) => {
+                        if (progressEvent.total) {
+                            const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                            progressFill.style.width = percentCompleted + '%';
+                            progressFill.textContent = percentCompleted + '%';
+                            
+                            const uploadedMB = (progressEvent.loaded / (1024 * 1024)).toFixed(2);
+                            const totalMB = (progressEvent.total / (1024 * 1024)).toFixed(2);
+                            
+                            if (percentCompleted % 10 === 0) {
+                                addLog(`📊 Progress: ${percentCompleted}% (${uploadedMB}MB / ${totalMB}MB)`, 'info');
+                            }
+                        }
+                    }
+                });
+
+                addLog('✅ Upload successful!', 'success');
+                addLog(`Response status: ${response.status}`, 'success');
+                addLog(`Response data: ${JSON.stringify(response.data)}`, 'success');
+                
+                showMessage(`
+                    <strong>✅ SUCCESS!</strong><br>
+                    Video uploaded: ${response.data.videoUrl}<br>
+                    Status: ${response.status}
+                `, 'success');
+
+            } catch (error) {
+                addLog('❌ Upload failed!', 'error');
+                addLog(`Error: ${error.message}`, 'error');
+                
+                if (error.response) {
+                    addLog(`Status: ${error.response.status}`, 'error');
+                    addLog(`Response: ${JSON.stringify(error.response.data)}`, 'error');
+                    
+                    showMessage(`
+                        <strong>❌ Upload Failed!</strong><br>
+                        Status: ${error.response.status}<br>
+                        Error: ${error.response.data?.message || error.message}<br>
+                        <br>
+                        <strong>Possible causes:</strong><br>
+                        1. Token invalid/expired<br>
+                        2. Backend down<br>
+                        3. CORS issue<br>
+                        4. File too large for backend
+                    `, 'error');
+                } else if (error.code === 'ERR_NETWORK') {
+                    addLog('Network error - Backend tak request nahi pahunchi!', 'error');
+                    
+                    showMessage(`
+                        <strong>🔴 NETWORK ERROR</strong><br>
+                        Backend tak request NAHI pahunchi!<br>
+                        <br>
+                        <strong>Check karein:</strong><br>
+                        1. Backend running hai? (PM2 status)<br>
+                        2. Nginx configured hai?<br>
+                        3. Firewall blocking to nahi?<br>
+                        4. SSL certificate OK hai?
+                    `, 'error');
+                } else {
+                    showMessage(`
+                        <strong>❌ Error:</strong><br>
+                        ${error.message}
+                    `, 'error');
+                }
+
+            } finally {
+                uploadBtn.disabled = false;
+                uploadBtn.textContent = '📤 Upload Video to Production Backend';
+            }
+        }
+
+        // Initial logs
+        addLog('✅ Test page loaded', 'success');
+        addLog(`Backend URL: ${BACKEND_URL}`, 'info');
+        addLog('Ready for testing!', 'info');
+    </script>
+</body>
+</html>
