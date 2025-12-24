@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from '@/utils/axiosInstance';
+import axiosRaw from 'axios'; // Raw axios for file uploads
 import { getToken, getUser } from '@/utils/sessionStorage';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
@@ -292,17 +293,20 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
         const uploadUrl = `${API_URL}/counter-display/upload-video`;
         console.log('📤 Uploading video to:', uploadUrl);
         console.log('📦 File size:', fileSizeMB, 'MB');
+        console.log('🔑 Token:', getToken() ? 'Present' : 'Missing');
         showMessage('info', `Uploading ${fileSizeMB}MB video... Kripya intezar karein (2-5 minutes)`);
         
         // Calculate timeout based on file size (1 minute per 30MB, minimum 5 minutes)
         const timeoutMs = Math.max(300000, Math.ceil(file.size / (30 * 1024 * 1024)) * 60000);
         console.log('⏱️ Upload timeout set to:', (timeoutMs / 60000).toFixed(1), 'minutes');
         
-        const response = await axios.post(uploadUrl, formData, {
+        // Use raw axios to avoid interceptor issues with large files
+        const token = getToken();
+        const response = await axiosRaw.post(uploadUrl, formData, {
           timeout: timeoutMs, // Dynamic timeout based on file size
           headers: { 
-            'Content-Type': 'multipart/form-data',
-            ...getAuthHeaders()
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data'
           },
           maxContentLength: Infinity,
           maxBodyLength: Infinity,
@@ -316,6 +320,8 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
           }
         });
         
+        console.log('📥 Server response:', response.data);
+        
         if (response.data.success) {
           setVideoUrl(response.data.videoUrl);
           showMessage('success', 'Video successfully upload ho gaya! ✅');
@@ -325,7 +331,12 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
         }
       } catch (error) {
         console.error('❌ Error uploading video:', error);
-        console.error('Error response:', error.response?.data);
+        console.error('❌ Error details:', {
+          message: error.message,
+          code: error.code,
+          status: error.response?.status,
+          data: error.response?.data
+        });
         
         let errorMessage = 'Video upload fail ho gaya';
         if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
