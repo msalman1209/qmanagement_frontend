@@ -18,6 +18,9 @@ function TicketInfoContent() {
   const [aiVoiceReady, setAiVoiceReady] = useState(false);
   const [isAnnouncing, setIsAnnouncing] = useState(false); // Prevent overlapping announcements
   const [announcementQueue, setAnnouncementQueue] = useState([]); // Queue for pending tickets
+  // Separate state for displayed ticket (only updates after announcement completes)
+  const [displayedTicket, setDisplayedTicket] = useState('');
+  const [displayedCounter, setDisplayedCounter] = useState('');
   const [broadcastChannel, setBroadcastChannel] = useState(null);
   const [audioUnlocked, setAudioUnlocked] = useState(false); // Auto-enabled in background
   const [audioEnabled, setAudioEnabled] = useState(false); // Track user interaction for audio
@@ -604,6 +607,11 @@ function TicketInfoContent() {
     setIsAnnouncing(true);
     console.log('🔒 Announcement started - locked');
     
+    // ✅ UPDATE DISPLAY IMMEDIATELY when announcement starts (not at the end)
+    console.log('🔄 Updating display NOW: Ticket', ticketNumber, 'Counter', counterNumber);
+    setDisplayedTicket(ticketNumber);
+    setDisplayedCounter(counterNumber);
+    
     // Show visual feedback that announcement is starting (for production debugging)
     if (typeof window !== 'undefined' && window.document) {
       document.title = `🔊 Announcing ${ticketNumber}`;
@@ -957,6 +965,8 @@ function TicketInfoContent() {
       
       console.log('✅ All language announcements completed');
       
+      // Display was already updated at START of announcement
+      
       // Restore title
       if (typeof window !== 'undefined' && window.document) {
         document.title = 'Ticket Info Display';
@@ -1087,12 +1097,13 @@ function TicketInfoContent() {
                   return ticket ? String(ticket).toLowerCase().trim() : '';
                 };
                 
-                const currentTicketNormalized = normalizeTicket(calledTicket);
+                // Use displayedTicket (currently announcing) for sorting, not calledTicket
+                const currentTicketNormalized = normalizeTicket(displayedTicket);
                 
-                console.log('🎯 Current calling ticket (normalized):', currentTicketNormalized);
+                console.log('🎯 Current ANNOUNCING ticket (normalized):', currentTicketNormalized);
                 console.log('🎯 All tickets in table:', uniqueTickets.map(t => normalizeTicket(t.ticket_number)));
                 
-                // Sort: current calling ticket first, then rest by time
+                // Sort: currently ANNOUNCING ticket first (displayedTicket), then rest by time
                 const sortedTickets = uniqueTickets.sort((a, b) => {
                   const aNormalized = normalizeTicket(a.ticket_number);
                   const bNormalized = normalizeTicket(b.ticket_number);
@@ -1107,7 +1118,7 @@ function TicketInfoContent() {
                 return sortedTickets
                   .slice(0, 10) // Show top 10
                   .map((item, index) => {
-                    // Highlight the currently calling ticket (case-insensitive comparison)
+                    // Highlight the currently ANNOUNCING ticket (displayedTicket)
                     const isCurrentTicket = normalizeTicket(item.ticket_number) === currentTicketNormalized;
                     const bgColor = isCurrentTicket ? 'bg-yellow-200' : 'bg-white';
                     const textWeight = isCurrentTicket ? 'font-bold' : 'font-bold';
@@ -1156,11 +1167,11 @@ function TicketInfoContent() {
             <div className="text-black font-bold text-[40px]">
               <b className="text-red-600 text-[50px]">Now Calling</b>
               <br />
-              <span className="text-[50px] uppercase font-bold">{calledTicket || 'Waiting...'}</span>
-              {calledTicket && (
+              <span className="text-[50px] uppercase font-bold">{displayedTicket || 'Waiting...'}</span>
+              {displayedTicket && (
                 <>
                   <span className="inline-block w-[50px] h-[6px] bg-black align-middle mx-2"></span>
-                  <span className="text-[50px] font-bold">{currentCounter || 'N/A'}</span>
+                  <span className="text-[50px] font-bold">{displayedCounter || 'N/A'}</span>
                 </>
               )}
             </div>
