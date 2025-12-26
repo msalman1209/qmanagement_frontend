@@ -6,6 +6,8 @@ import { updateOwnProfile } from '@/store/thunks';
 import { updateUser } from '@/store/slices/authSlice';
 import { Eye, EyeOff } from 'lucide-react';
 
+
+
 export default function ProfilePage({ params }) {
   // Unwrap params if provided (for dynamic route)
   const role = params ? use(params).role : null;

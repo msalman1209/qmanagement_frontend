@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Standalone output for Electron
+  output: 'standalone',
+  
   // Performance Optimizations
   compress: true, // Enable gzip compression
   poweredByHeader: false, // Remove X-Powered-By header
@@ -24,7 +27,6 @@ const nextConfig = {
   },
 
   // Production Optimizations
-  swcMinify: true, // Use SWC for faster minification
   reactStrictMode: true, // Enable React strict mode
   
   // Experimental Features for Performance

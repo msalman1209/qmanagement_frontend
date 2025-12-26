@@ -5,6 +5,8 @@ import axios from '@/utils/axiosInstance';
 import axiosRaw from 'axios'; // Raw axios for file uploads
 import { getToken, getUser } from '@/utils/sessionStorage';
 
+
+
 // ❌ DON'T use getApiUrl() at module level - it runs during SSR when window is undefined
 // ✅ SOLUTION: Use state and set URL in useEffect after component mounts on client
 

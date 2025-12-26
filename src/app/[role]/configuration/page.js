@@ -3,6 +3,8 @@ import { useState, useEffect } from 'react';
 import axios from '@/utils/axiosInstance';
 import { getToken, getUser } from '@/utils/sessionStorage';
 
+
+
 export default function ConfigurationPage({ adminId: propAdminId }) {
   // ✅ Get adminId from prop OR from logged-in user's session
   const [adminId, setAdminId] = useState(null);
