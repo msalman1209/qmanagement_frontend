@@ -23,6 +23,8 @@ export default function AssignServicesPage({ adminId }) {
       return;
     }
 
+    
+
     fetchUsers();
     fetchServices();
     fetchAssignedServices();
