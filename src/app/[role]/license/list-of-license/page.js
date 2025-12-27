@@ -25,6 +25,275 @@ import DetailsReportsPage from '@/app/[role]/reports/details-reports/page';
 import ShortReportsPage from '@/app/[role]/reports/short-reports/page';
 import ActivityLogsPage from '@/app/[role]/activity-logs/page';
 
+// Backup & Restore Component
+function BackupRestorePage({ adminId }) {
+  const [uploading, setUploading] = useState(false);
+  const [restoring, setRestoring] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [backupHistory, setBackupHistory] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const token = useSelector((state) => state.auth.token);
+
+  useEffect(() => {
+    if (adminId) {
+      fetchBackupHistory();
+    }
+  }, [adminId]);
+
+  const fetchBackupHistory = async () => {
+    try {
+      setLoadingHistory(true);
+      const authToken = token || getToken();
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/backup/history/${adminId}`, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        }
+      });
+      const data = await response.json();
+      if (data.success) {
+        setBackupHistory(data.data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching backup history:', error);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.name.endsWith('.sql')) {
+        setSelectedFile(file);
+      } else {
+        alert('Please select a valid SQL backup file');
+        e.target.value = '';
+      }
+    }
+  };
+
+  const handleBackupRestore = async () => {
+    if (!selectedFile) {
+      alert('Please select a backup file');
+      return;
+    }
+
+    if (!confirm('Are you sure you want to restore this backup? This will update all data for this admin.')) {
+      return;
+    }
+
+    try {
+      setRestoring(true);
+      const authToken = token || getToken();
+      const formData = new FormData();
+      formData.append('backupFile', selectedFile);
+      formData.append('adminId', adminId);
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/backup/restore`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        },
+        body: formData
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        alert('Backup restored successfully!');
+        setSelectedFile(null);
+        document.getElementById('fileInput').value = '';
+        fetchBackupHistory();
+      } else {
+        alert(data.message || 'Failed to restore backup');
+      }
+    } catch (error) {
+      console.error('Error restoring backup:', error);
+      alert('Failed to restore backup. Please try again.');
+    } finally {
+      setRestoring(false);
+    }
+  };
+
+  const handleCreateBackup = async () => {
+    try {
+      setUploading(true);
+      const authToken = token || getToken();
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/backup/create/${adminId}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        }
+      });
+
+      if (response.ok) {
+        // Get filename from Content-Disposition header or use default
+        const contentDisposition = response.headers.get('Content-Disposition');
+        let filename = `backup_admin_${adminId}_${new Date().toISOString().split('T')[0]}.sql`;
+        
+        if (contentDisposition) {
+          const matches = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(contentDisposition);
+          if (matches != null && matches[1]) {
+            filename = matches[1].replace(/['"]/g, '');
+          }
+        }
+
+        // Download the SQL file
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        
+        alert('SQL Backup created and downloaded successfully!');
+        fetchBackupHistory();
+      } else {
+        const data = await response.json();
+        alert(data.message || 'Failed to create backup');
+      }
+    } catch (error) {
+      console.error('Error creating backup:', error);
+      alert('Failed to create backup. Please try again.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <div className="p-6">
+      <div className="max-w-4xl mx-auto">
+        <h2 className="text-2xl font-bold text-gray-800 mb-6">Backup & Restore</h2>
+        
+        {/* Create Backup Section */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+          <h3 className="text-lg font-semibold text-gray-700 mb-4 flex items-center">
+            <svg className="w-5 h-5 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Create New Backup
+          </h3>
+          <p className="text-gray-600 mb-4">Create a complete backup of all data for Admin ID: {adminId}</p>
+          <button
+            onClick={handleCreateBackup}
+            disabled={uploading}
+            className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center"
+          >
+            {uploading ? (
+              <>
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                Creating Backup...
+              </>
+            ) : (
+              <>
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                Download Backup
+              </>
+            )}
+          </button>
+        </div>
+
+        {/* Restore Backup Section */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+          <h3 className="text-lg font-semibold text-gray-700 mb-4 flex items-center">
+            <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+            </svg>
+            Restore from Backup
+          </h3>
+          <p className="text-gray-600 mb-4">Upload a backup file to restore data for Admin ID: {adminId}</p>
+          
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Select Backup File (SQL)</label>
+            <input
+              id="fileInput"
+              type="file"
+              accept=".sql"
+              onChange={handleFileSelect}
+              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+            />
+            {selectedFile && (
+              <p className="mt-2 text-sm text-green-600 flex items-center">
+                <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+                {selectedFile.name} selected
+              </p>
+            )}
+          </div>
+
+          <button
+            onClick={handleBackupRestore}
+            disabled={!selectedFile || restoring}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center"
+          >
+            {restoring ? (
+              <>
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                Restoring...
+              </>
+            ) : (
+              <>
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                </svg>
+                Restore Backup
+              </>
+            )}
+          </button>
+        </div>
+
+        {/* Backup History */}
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <h3 className="text-lg font-semibold text-gray-700 mb-4 flex items-center">
+            <svg className="w-5 h-5 mr-2 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Backup History
+          </h3>
+          
+          {loadingHistory ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+            </div>
+          ) : backupHistory.length === 0 ? (
+            <p className="text-gray-500 text-center py-8">No backup history found</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Date</th>
+                    <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Type</th>
+                    <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {backupHistory.map((backup, index) => (
+                    <tr key={index} className="hover:bg-gray-50">
+                      <td className="px-4 py-3 text-sm text-gray-900">{new Date(backup.created_at).toLocaleString()}</td>
+                      <td className="px-4 py-3 text-sm text-gray-600">{backup.type}</td>
+                      <td className="px-4 py-3">
+                        <span className={`px-2 py-1 text-xs rounded-full ${backup.status === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                          {backup.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function ListOfLicensePage() {
   const router = useRouter();
   const dispatch = useDispatch();
@@ -497,6 +766,12 @@ export default function ListOfLicensePage() {
                         icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>}
                         label="Activity Logs"
                       />
+                      <SidebarButton 
+                        active={activeTab === 'backup'} 
+                        onClick={() => setActiveTab('backup')}
+                        icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>}
+                        label="Backup & Restore"
+                      />
                     </>
                   ) : (
                     <>
@@ -544,6 +819,7 @@ export default function ListOfLicensePage() {
                         {activeTab === 'display' && <DisplayScreensSessionsPage adminId={adminDetails?.id || selectedAdmin?.admin_id} />}
                         {activeTab === 'dashboard-btns' && <UserDashboardBtnsPage adminId={adminDetails?.id || selectedAdmin?.admin_id} />}
                         {activeTab === 'activity-logs' && <ActivityLogsPage adminId={adminDetails?.id || selectedAdmin?.admin_id} />}
+                        {activeTab === 'backup' && <BackupRestorePage adminId={adminDetails?.id || selectedAdmin?.admin_id} />}
                       </>
                     ) : (
                       <>
