@@ -30,6 +30,22 @@ export default function Navbar() {
   };
   const role = currentUser ? roleMapping[currentUser.role] || 'user' : 'user';
 
+  // Function to get dashboard route based on role
+  const getDashboardRoute = () => {
+    if (!currentUser) return '/login';
+    
+    switch (currentUser.role) {
+      case 'super_admin':
+        return '/superadmin/license/list-of-license';
+      case 'admin':
+        return '/admin';
+      case 'user':
+        return '/user/dashboard';
+      default:
+        return `/${role}`;
+    }
+  };
+
   // Lock body scroll when modal is open
   useEffect(() => {
     if (showPasswordModal || showAboutModal) {
@@ -125,7 +141,7 @@ export default function Navbar() {
       <nav className="bg-[#71dd37] border-b border-gray-200 px-8 py-2.5 sticky top-0 z-50 shadow-md">
         <div className="max-w-screen-2xl mx-auto flex items-center justify-between">
           {/* Logo */}
-          <Link href={`/${role}`} className="flex items-center hover:opacity-90 transition-opacity">
+          <Link href={getDashboardRoute()} className="flex items-center hover:opacity-90 transition-opacity">
             <Image 
               src={MainLogo} 
               alt="Tech Solutionor Logo" 
