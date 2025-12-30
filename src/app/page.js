@@ -35,9 +35,9 @@ export default function Home() {
     canViewRecentTickets: false
   });
 
-  // Auto-refresh permissions every 5 seconds
+  // Load permissions once on mount - no auto-refresh for speed
   useEffect(() => {
-    const refreshPermissions = async () => {
+    const loadPermissions = async () => {
       if (!currentUser || !token) return;
 
       try {
@@ -53,13 +53,11 @@ export default function Home() {
           const userData = await userResponse.json();
           
           if (userData.user && userData.user.permissions) {
-            // Update Redux state with fresh permissions
             dispatch({ 
               type: 'auth/updateUser', 
               payload: { permissions: userData.user.permissions } 
             });
             
-            // Parse and set permissions
             let userPermissions = userData.user.permissions;
             if (typeof userPermissions === 'string') {
               try {
@@ -74,23 +72,14 @@ export default function Home() {
               canViewReports: userPermissions.canViewReports === true || userPermissions.canViewReports === 1 || userPermissions.canViewReports === '1',
               canViewRecentTickets: userPermissions.canViewRecentTickets === true || userPermissions.canViewRecentTickets === 1 || userPermissions.canViewRecentTickets === '1'
             });
-            
-            console.log('🔄 Permissions auto-refreshed:', userPermissions);
           }
         }
       } catch (error) {
-        console.error('Error refreshing permissions:', error);
+        console.error('Error loading permissions:', error);
       }
     };
 
-    // Initial refresh
-    refreshPermissions();
-
-    // Set interval for auto-refresh every 5 seconds
-    const intervalId = setInterval(refreshPermissions, 5000);
-
-    // Cleanup interval on unmount
-    return () => clearInterval(intervalId);
+    loadPermissions();
   }, [currentUser, token, dispatch]);
 
   // Fetch services and license data for the logged-in user's admin
@@ -247,68 +236,66 @@ export default function Home() {
   const [recentTickets, setRecentTickets] = useState([]);
   const [reportTickets, setReportTickets] = useState([]);
 
-  // Fetch tickets
-  useEffect(() => {
-    const fetchTickets = async () => {
-      if (!currentUser || !token) return;
-
-      try {
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
-        
-        // Fetch today's tickets for recent tickets dropdown
-        const recentResponse = await fetch(`${API_URL}/tickets?userId=${currentUser.id}&today=true`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-
-        if (recentResponse.ok) {
-          const recentData = await recentResponse.json();
-          const formattedRecent = recentData.tickets.map(ticket => ({
-            id: ticket.id,
-            ticketNumber: ticket.ticket_id,
-            service: ticket.service_name,
-            time: new Date(ticket.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
-          }));
-          setRecentTickets(formattedRecent);
+  // Fetch tickets only when dropdown/modal is opened - lazy loading for speed
+  const fetchRecentTickets = async () => {
+    if (!currentUser || !token) return;
+    try {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${API_URL}/tickets?userId=${currentUser.id}&today=true`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
-
-        // Fetch all tickets for reports
-        const allResponse = await fetch(`${API_URL}/tickets?userId=${currentUser.id}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-
-        if (allResponse.ok) {
-          const allData = await allResponse.json();
-          const formattedAll = allData.tickets.map(ticket => ({
-            id: ticket.id,
-            ticketNumber: ticket.ticket_id,
-            dateTime: new Date(ticket.created_at).toLocaleString('en-US', { 
-              year: 'numeric', 
-              month: '2-digit', 
-              day: '2-digit',
-              hour: '2-digit', 
-              minute: '2-digit',
-              hour12: true 
-            }),
-            service: ticket.service_name,
-            user: currentUser.username,
-            customerName: ticket.name || 'N/A',
-            status: ticket.status ? ticket.status.charAt(0).toUpperCase() + ticket.status.slice(1) : 'Pending'
-          }));
-          setReportTickets(formattedAll);
-        }
-      } catch (error) {
-        console.error('Error fetching tickets:', error);
+      });
+      if (response.ok) {
+        const data = await response.json();
+        const formatted = data.tickets.map(ticket => ({
+          id: ticket.id,
+          ticketNumber: ticket.ticket_id,
+          service: ticket.service_name,
+          time: new Date(ticket.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
+        }));
+        setRecentTickets(formatted);
       }
-    };
+    } catch (error) {
+      console.error('Error fetching recent tickets:', error);
+    }
+  };
 
-    fetchTickets();
-  }, [currentUser, token]);
+  const fetchReportTickets = async () => {
+    if (!currentUser || !token) return;
+    try {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${API_URL}/tickets?userId=${currentUser.id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        const formatted = data.tickets.map(ticket => ({
+          id: ticket.id,
+          ticketNumber: ticket.ticket_id,
+          dateTime: new Date(ticket.created_at).toLocaleString('en-US', { 
+            year: 'numeric', 
+            month: '2-digit', 
+            day: '2-digit',
+            hour: '2-digit', 
+            minute: '2-digit',
+            hour12: true 
+          }),
+          service: ticket.service_name,
+          user: currentUser.username,
+          customerName: ticket.name || 'N/A',
+          status: ticket.status ? ticket.status.charAt(0).toUpperCase() + ticket.status.slice(1) : 'Pending'
+        }));
+        setReportTickets(formatted);
+      }
+    } catch (error) {
+      console.error('Error fetching report tickets:', error);
+    }
+  };
 
   const handleReprint = async (ticket) => {
     try {
@@ -373,34 +360,11 @@ export default function Home() {
   };
 
   const handleSkip = async () => {
-    // Use pre-created ticket from service click
     const ticketNumber = selectedService.preCreatedTicket;
     
-    // Refresh tickets list
-    try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
-      const recentResponse = await fetch(`${API_URL}/tickets?userId=${currentUser.id}&today=true`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      if (recentResponse.ok) {
-        const recentData = await recentResponse.json();
-        const formattedRecent = recentData.tickets.map(ticket => ({
-          id: ticket.id,
-          ticketNumber: ticket.ticket_id,
-          service: ticket.service_name,
-          time: new Date(ticket.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
-        }));
-        setRecentTickets(formattedRecent);
-      }
-    } catch (error) {
-      console.error('Error refreshing tickets:', error);
-    }
-    
     setShowDetailsModal(false);
-    setIsCreatingTicket(false); // Reset the flag
+    setIsCreatingTicket(false);
+    
     // Print ticket without customer details
     if (ticketNumber) {
       printTicket(selectedService, { name: '', email: '', number: '' }, ticketNumber);
@@ -409,15 +373,13 @@ export default function Home() {
   };
 
   const handleSubmit = async (service) => {
-    console.log('Customer Details:', customerDetails);
-    
     const ticketNumber = service.preCreatedTicket;
     const ticketDbId = service.ticketDbId;
     
-    // Update existing ticket with customer details
+    // Update ticket with customer details (no await for speed)
     try {
       const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
-      const response = await fetch(`${API_URL}/tickets/${ticketDbId}`, {
+      fetch(`${API_URL}/tickets/${ticketDbId}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -428,40 +390,19 @@ export default function Home() {
           email: customerDetails.email,
           number: customerDetails.number
         })
-      });
-
-      if (response.ok) {
-        // Refresh tickets list
-        const recentResponse = await fetch(`${API_URL}/tickets?userId=${currentUser.id}&today=true`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        if (recentResponse.ok) {
-          const recentData = await recentResponse.json();
-          const formattedRecent = recentData.tickets.map(ticket => ({
-            id: ticket.id,
-            ticketNumber: ticket.ticket_id,
-            service: ticket.service_name,
-            time: new Date(ticket.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
-          }));
-          setRecentTickets(formattedRecent);
-        }
-      }
+      }).catch(error => console.error('Error updating ticket:', error));
     } catch (error) {
-      console.error('Error updating ticket:', error);
+      console.error('Error:', error);
     }
     
     setShowDetailsModal(false);
-    setIsCreatingTicket(false); // Reset the flag
+    setIsCreatingTicket(false);
     
-    // Print ticket
+    // Print ticket immediately (don't wait for update)
     if (ticketNumber) {
       printTicket(service, customerDetails, ticketNumber);
     }
     
-    // Reset form
     setCustomerDetails({ name: '', email: '', number: '' });
   };
 
@@ -783,7 +724,10 @@ export default function Home() {
             {/* Reports Button - Only show if user has canViewReports permission */}
             {permissions.canViewReports && (
               <button
-                onClick={() => setShowReportsModal(true)}
+                onClick={() => {
+                  setShowReportsModal(true);
+                  fetchReportTickets();
+                }}
                 className="px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-lg shadow-lg hover:shadow-xl hover:from-purple-700 hover:to-purple-800 transition-all flex items-center gap-2"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -797,7 +741,10 @@ export default function Home() {
             {permissions.canViewRecentTickets && (
               <div className="relative">
                 <button
-                  onClick={() => setShowRecentTickets(!showRecentTickets)}
+                  onClick={() => {
+                    setShowRecentTickets(!showRecentTickets);
+                    if (!showRecentTickets) fetchRecentTickets();
+                  }}
                   className="px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg shadow-lg hover:shadow-xl hover:from-green-700 hover:to-green-800 transition-all flex items-center gap-2"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -897,6 +844,12 @@ export default function Home() {
                     
                     // Create ticket immediately when service is clicked
                     try {
+                      console.log('📝 Creating ticket with:', {
+                        service_id: service.id,
+                        user_id: currentUser.id,
+                        admin_id: currentUser.admin_id
+                      });
+
                       const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
                       const response = await fetch(`${API_URL}/tickets`, {
                         method: 'POST',
@@ -911,18 +864,25 @@ export default function Home() {
                         })
                       });
 
-                      if (response.ok) {
-                        const data = await response.json();
-                        console.log('✅ Ticket created:', data.ticket_id);
-                        // Store the ticket info with the service
-                        setSelectedService({ ...service, preCreatedTicket: data.ticket_id, ticketDbId: data.ticket?.id });
-                        setShowDetailsModal(true);
-                      } else {
-                        console.error('❌ Failed to create ticket');
-                        setIsCreatingTicket(false);
+                      if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
                       }
+
+                      const data = await response.json();
+                      console.log('✅ Ticket created:', data.ticket_id);
+                      
+                      // Store the ticket info with the service
+                      setSelectedService({ ...service, preCreatedTicket: data.ticket_id, ticketDbId: data.ticket?.id });
+                      setShowDetailsModal(true);
+                      setIsCreatingTicket(false);
                     } catch (error) {
                       console.error('❌ Error creating ticket:', error);
+                      console.error('❌ Error details:', {
+                        message: error.message,
+                        stack: error.stack
+                      });
+                      alert(`Failed to create ticket: ${error.message || 'Unknown error'}`);
                       setIsCreatingTicket(false);
                     }
                   }}

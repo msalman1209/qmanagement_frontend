@@ -135,14 +135,21 @@ export const AuthProvider = ({ children }) => {
     const url = endpoint.startsWith('http') ? endpoint : `${API_URL}${endpoint}`;
 
     try {
-      const response = await fetch(url, {
+      const fetchOptions = {
         ...options,
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
           ...options.headers,
         },
-      });
+      };
+
+      // Stringify body if it's an object
+      if (options.body && typeof options.body === 'object') {
+        fetchOptions.body = JSON.stringify(options.body);
+      }
+
+      const response = await fetch(url, fetchOptions);
 
       const data = await response.json();
 
