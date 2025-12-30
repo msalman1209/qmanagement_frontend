@@ -161,8 +161,18 @@ export default function CompletedTasks({ adminId = null }) {
       
       // Add query parameters for date filtering
       const params = new URLSearchParams();
-      if (filterStartDate) params.append('start_date', filterStartDate);
-      if (filterEndDate) params.append('end_date', filterEndDate);
+      
+      // ✅ Format dates properly (YYYY-MM-DD)
+      if (filterStartDate) {
+        const formattedStart = filterStartDate;
+        params.append('start_date', formattedStart);
+        console.log('📅 Start Date:', formattedStart);
+      }
+      if (filterEndDate) {
+        const formattedEnd = filterEndDate;
+        params.append('end_date', formattedEnd);
+        console.log('📅 End Date:', formattedEnd);
+      }
       
       // Super Admin mode - add adminId
       if (isSuperAdminMode) {
@@ -174,6 +184,7 @@ export default function CompletedTasks({ adminId = null }) {
       }
 
       console.log('📡 Fetching from:', url);
+      console.log('🔍 Query params:', params.toString());
       console.log('🎫 Headers being sent:', { Authorization: `Bearer ${token?.substring(0, 20)}...` });
 
       const response = await axios.get(url);
