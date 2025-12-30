@@ -1,0 +1,4 @@
+{
+  "buildCommand": "yarn install --ignore-optional && yarn build",
+  "installCommand": "yarn install --ignore-optional"
+}

@@ -85,13 +85,15 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "eslint": "^9",
+    "eslint-config-next": "^16.0.7",
+    "tailwindcss": "^4"
+  },
+  "optionalDependencies": {
     "concurrently": "^9.2.1",
     "cross-env": "^10.1.0",
     "electron": "^39.2.7",
     "electron-builder": "^26.0.12",
-    "eslint": "^9",
-    "eslint-config-next": "^16.0.7",
-    "tailwindcss": "^4",
     "wait-on": "^9.0.3"
   }
 }
