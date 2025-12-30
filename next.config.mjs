@@ -35,32 +35,6 @@ const nextConfig = {
     optimizePackageImports: ['lucide-react', 'react-icons'],
   },
 
-  // Turbopack configuration
-  turbopack: {},
-
-  // Webpack configuration to handle jsPDF
-  webpack: (config, { isServer }) => {
-    // Don't bundle jsPDF on the server side
-    if (isServer) {
-      config.externals = [...(config.externals || []), 'jspdf', 'jspdf-autotable', 'canvas', 'dompurify'];
-    }
-    
-    // Add fallbacks for Node.js modules
-    config.resolve = config.resolve || {};
-    config.resolve.fallback = {
-      ...config.resolve.fallback,
-      fs: false,
-      net: false,
-      tls: false,
-      crypto: false,
-      stream: false,
-      util: false,
-      canvas: false,
-    };
-    
-    return config;
-  },
-
   // Headers for caching and security
   async headers() {
     return [

@@ -3,6 +3,8 @@ import { useState, useEffect } from 'react';
 import { FaFilter, FaCalendarAlt, FaSearch, FaChevronDown, FaFileWord } from 'react-icons/fa';
 import { HiMenu } from 'react-icons/hi';
 import { useAuthContext } from '@/contexts/AuthContext';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 
 
@@ -273,12 +275,8 @@ export default function SuperAdminPage({ adminId }) {
   };
 
   // Download as PDF
-  const downloadAsPDF = async () => {
+  const downloadAsPDF = () => {
     const visibleColumns = selectedColumns.filter(col => col.selected);
-    
-    // Dynamic import to avoid SSR issues
-    const jsPDF = (await import('jspdf')).default;
-    const autoTable = (await import('jspdf-autotable')).default;
     
     const doc = new jsPDF('l', 'mm', 'a4'); // landscape orientation
     
