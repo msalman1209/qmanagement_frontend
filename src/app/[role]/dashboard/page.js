@@ -221,16 +221,26 @@ export default function UserDashboard({ adminId = null }) {
     const fetchButtonSettings = async () => {
       try {
         const token = getToken();
-        if (!token) return;
+        const user = getUser();
+        
+        if (!token || !user) return;
 
-        const response = await axios.get(`${apiUrl}/button-settings`, {
+        // Get admin ID from user
+        const userId = user.admin_id || user.id;
+        
+        if (!userId) {
+          console.warn('⚠️ No admin ID found for button settings');
+          return;
+        }
+
+        const response = await axios.get(`${apiUrl}/button-settings/${userId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
 
         if (response.data.success) {
           setShowNextButton(response.data.settings.showNextButton);
           setShowTransferButton(response.data.settings.showTransferButton);
-          console.log('✅ Button settings loaded:', response.data.settings);
+          console.log('✅ Button settings loaded for admin:', userId, response.data.settings);
         }
       } catch (error) {
         console.error('❌ Error fetching button settings:', error);

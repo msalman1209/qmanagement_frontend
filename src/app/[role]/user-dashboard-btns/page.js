@@ -1,49 +1,94 @@
 'use client';
 import { useState, useEffect } from 'react';
 import axios from '@/utils/axiosInstance';
-import { getToken } from '@/utils/sessionStorage';
+import { getToken, getSessionData, getUser } from '@/utils/sessionStorage';
 
 
 
-export default function UserDashboardBtnsPage() {
+export default function UserDashboardBtnsPage({ adminId: propAdminId }) {
+  // ✅ Get adminId from prop OR from logged-in user's session
+  const [adminId, setAdminId] = useState(null);
   const [showNextButton, setShowNextButton] = useState(true);
   const [showTransferButton, setShowTransferButton] = useState(true);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
 
+  // Fetch admin_id from prop or session
+  useEffect(() => {
+    // If adminId not provided as prop, get from logged-in user
+    if (propAdminId) {
+      setAdminId(propAdminId);
+      console.log('✅ Using admin_id from prop:', propAdminId);
+    } else {
+      const user = getUser();
+      if (user && user.admin_id) {
+        setAdminId(user.admin_id);
+        console.log('✅ Using admin_id from logged-in user:', user.admin_id);
+      } else {
+        console.error('❌ No admin_id found in user session');
+      }
+    }
+  }, [propAdminId]);
+
   // Fetch current settings on component mount
   useEffect(() => {
-    fetchSettings();
-  }, []);
+    // Only load settings when adminId is available
+    if (adminId) {
+      fetchSettings(adminId);
+    }
+  }, [adminId]);
 
-  const fetchSettings = async () => {
+  const fetchSettings = async (userId) => {
     try {
+      // ✅ Always require adminId - user must belong to an admin
+      if (!userId) {
+        console.warn('⚠️ Waiting for adminId to load settings...');
+        return;
+      }
+      
+      console.log('📥 Loading button settings for admin_id:', userId);
+      
       const token = getToken();
-      const response = await axios.get('/button-settings', {
+      const response = await axios.get(`/button-settings/${userId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
       if (response.data.success) {
         setShowNextButton(response.data.settings.showNextButton);
         setShowTransferButton(response.data.settings.showTransferButton);
+        console.log('✅ Button settings loaded from database:', response.data.settings);
       }
     } catch (error) {
       console.error('Error fetching settings:', error);
-      setMessage('Failed to load settings');
+      // If no settings found, use defaults
+      if (error.response?.status === 404) {
+        setShowNextButton(true);
+        setShowTransferButton(true);
+        console.log('ℹ️ No settings found, using defaults');
+      } else {
+        setMessage('Failed to load settings');
+      }
     } finally {
       setLoading(false);
     }
   };
 
   const handleUpdateSettings = async () => {
+    // ✅ Validate adminId before saving
+    if (!adminId) {
+      setMessage('❌ Error: No admin ID found. Cannot save settings.');
+      console.error('❌ No admin_id found. Cannot save settings.');
+      return;
+    }
+
     setSaving(true);
     setMessage('');
 
     try {
       const token = getToken();
       const response = await axios.put(
-        '/button-settings',
+        `/button-settings/${adminId}`,
         {
           showNextButton,
           showTransferButton
@@ -55,6 +100,7 @@ export default function UserDashboardBtnsPage() {
 
       if (response.data.success) {
         setMessage('✅ Button settings updated successfully!');
+        console.log('✅ Button settings saved to database for admin_id:', adminId);
         setTimeout(() => setMessage(''), 3000);
       }
     } catch (error) {
@@ -68,7 +114,12 @@ export default function UserDashboardBtnsPage() {
   if (loading) {
     return (
       <div className="p-8 flex justify-center items-center">
-        <div className="text-gray-600">Loading settings...</div>
+        <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-6">
+          <div className="flex items-center gap-3">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-yellow-600"></div>
+            <p className="text-yellow-800 font-medium">Loading button settings...</p>
+          </div>
+        </div>
       </div>
     );
   }
@@ -77,6 +128,18 @@ export default function UserDashboardBtnsPage() {
     <div className="p-8">
       <h1 className="text-2xl font-semibold text-gray-700 mb-6">Button Settings</h1>
       
+      {/* Loading state while adminId is being fetched */}
+      {!adminId && (
+        <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-6 max-w-2xl mb-6">
+          <div className="flex items-center gap-3">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-yellow-600"></div>
+            <p className="text-yellow-800 font-medium">Loading admin configuration...</p>
+          </div>
+        </div>
+      )}
+      
+      {/* Show settings only when adminId is available */}
+      {adminId && (
       <div className="bg-white rounded-lg shadow p-6 max-w-2xl">
         <div className="space-y-6">
           {/* Show "NEXT" Button */}
@@ -130,6 +193,7 @@ export default function UserDashboardBtnsPage() {
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 }

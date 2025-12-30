@@ -39,6 +39,20 @@ export const getUser = () => {
   return userStr ? JSON.parse(decodeURIComponent(userStr)) : null
 }
 
+// Get complete session data (token + user)
+export const getSessionData = () => {
+  if (typeof window === 'undefined') return null
+  const token = getToken()
+  const user = getUser()
+  
+  if (!token || !user) return null
+  
+  return {
+    token,
+    user
+  }
+}
+
 // Check if authenticated
 export const isAuthenticated = () => {
   if (typeof window === 'undefined') return false

@@ -30,6 +30,8 @@ export default function LoginPage() {
   const [activeTab, setActiveTab] = useState('user');
   const [showPassword, setShowPassword] = useState(false);
   const [showAdminPassword, setShowAdminPassword] = useState(false);
+  const [showReceptionistPassword, setShowReceptionistPassword] = useState(false);
+  const [showTicketInfoPassword, setShowTicketInfoPassword] = useState(false);
   const [showCounterModal, setShowCounterModal] = useState(false);
   const [pendingUserData, setPendingUserData] = useState(null);
   
@@ -151,6 +153,115 @@ export default function LoginPage() {
       const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
       let endpoint = '';
       let loginData = { email: formData.email, password: formData.password };
+      
+      // Handle Receptionist Login
+      if (activeTab === 'receptionist') {
+        loginData = { username: formData.email, password: formData.password };
+        endpoint = `${API_URL}/auth/receptionist/login`;
+
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(loginData),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+          const errorMsg = data.message || 'Invalid credentials';
+          dispatch(setError(errorMsg));
+          showToast(errorMsg, 'error');
+          dispatch(setLoading(false));
+          return;
+        }
+
+        // Check role
+        if (data.user.role !== 'receptionist') {
+          const errorMsg = 'Access denied. Only Receptionist users can login here.';
+          dispatch(setError(errorMsg));
+          showToast(errorMsg, 'error');
+          dispatch(setLoading(false));
+          return;
+        }
+
+        // Store credentials
+        dispatch(setCredentials({
+          user: data.user,
+          token: data.token,
+        }));
+
+        showToast('Login successful!', 'success');
+        router.push('/');
+        dispatch(setLoading(false));
+        return;
+      }
+
+      // Handle Ticket Info Login
+      if (activeTab === 'ticketinfo') {
+        loginData = { username: formData.email, password: formData.password };
+        endpoint = `${API_URL}/auth/ticket-info/login`;
+
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(loginData),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+          const errorMsg = data.message || 'Invalid credentials';
+          dispatch(setError(errorMsg));
+          showToast(errorMsg, 'error');
+          dispatch(setLoading(false));
+          return;
+        }
+
+        // Check role
+        if (data.user.role !== 'ticket_info') {
+          const errorMsg = 'Access denied. Only Ticket Info users can login here.';
+          dispatch(setError(errorMsg));
+          showToast(errorMsg, 'error');
+          dispatch(setLoading(false));
+          return;
+        }
+
+        // Store credentials
+        dispatch(setCredentials({
+          user: data.user,
+          token: data.token,
+        }));
+
+        // Fetch screen configuration
+        try {
+          const configResponse = await fetch(`${API_URL}/counter-display/config`, {
+            headers: { Authorization: `Bearer ${data.token}` }
+          });
+          
+          const configData = await configResponse.json();
+          
+          if (configData.success && configData.config) {
+            const screenType = configData.config.screen_type;
+            showToast('Login successful!', 'success');
+            
+            if (screenType === 'horizontal') {
+              window.location.href = '/ticket_info_horizontal';
+            } else {
+              window.location.href = '/ticket_info_vertical';
+            }
+          } else {
+            showToast('Login successful!', 'success');
+            window.location.href = '/ticket_info_vertical';
+          }
+        } catch (configError) {
+          console.error('Config fetch error:', configError);
+          showToast('Login successful!', 'success');
+          window.location.href = '/ticket_info_vertical';
+        }
+        
+        dispatch(setLoading(false));
+        return;
+      }
       
       if (activeTab === 'user') {
         endpoint = `${API_URL}/auth/user/login`;
@@ -344,29 +455,58 @@ export default function LoginPage() {
           )}
 
           {/* Tabs Navigation */}
-          <div className="flex mb-6 bg-gray-100 rounded-lg p-1">
-            <button
-              onClick={() => setActiveTab('user')}
-              disabled={loading}
-              className={`flex-1 py-3 px-4 rounded-lg text-center font-semibold transition-all ${
-                activeTab === 'user'
-                  ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-md'
-                  : 'text-gray-700 hover:text-gray-900'
-              } disabled:opacity-50 disabled:cursor-not-allowed`}
-            >
-              User Login
-            </button>
-            <button
-              onClick={() => setActiveTab('admin')}
-              disabled={loading}
-              className={`flex-1 py-3 px-4 rounded-lg text-center font-semibold transition-all ${
-                activeTab === 'admin'
-                  ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-md'
-                  : 'text-gray-700 hover:text-gray-900'
-              } disabled:opacity-50 disabled:cursor-not-allowed`}
-            >
-              Admin Login
-            </button>
+          <div className="mb-6 space-y-2">
+            {/* First Row - User & Admin */}
+            <div className="flex bg-gray-100 rounded-lg p-1 gap-1">
+              <button
+                onClick={() => setActiveTab('user')}
+                disabled={loading}
+                className={`flex-1 py-3 px-4 rounded-lg text-center font-semibold transition-all ${
+                  activeTab === 'user'
+                    ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-md'
+                    : 'text-gray-700 hover:text-gray-900'
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
+              >
+                User Login
+              </button>
+              <button
+                onClick={() => setActiveTab('admin')}
+                disabled={loading}
+                className={`flex-1 py-3 px-4 rounded-lg text-center font-semibold transition-all ${
+                  activeTab === 'admin'
+                    ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-md'
+                    : 'text-gray-700 hover:text-gray-900'
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
+              >
+                Admin Login
+              </button>
+            </div>
+
+            {/* Second Row - Receptionist & Ticket Info */}
+            <div className="flex bg-gray-100 rounded-lg p-1 gap-1">
+              <button
+                onClick={() => setActiveTab('receptionist')}
+                disabled={loading}
+                className={`flex-1 py-3 px-4 rounded-lg text-center font-semibold transition-all ${
+                  activeTab === 'receptionist'
+                    ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-md'
+                    : 'text-gray-700 hover:text-gray-900'
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
+              >
+                Receptionist Login
+              </button>
+              <button
+                onClick={() => setActiveTab('ticketinfo')}
+                disabled={loading}
+                className={`flex-1 py-3 px-4 rounded-lg text-center font-semibold transition-all ${
+                  activeTab === 'ticketinfo'
+                    ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-md'
+                    : 'text-gray-700 hover:text-gray-900'
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
+              >
+                Ticket Info Login
+              </button>
+            </div>
           </div>
 
             {/* User Login Form */}
@@ -509,6 +649,178 @@ export default function LoginPage() {
                         className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
                       >
                         {showAdminPassword ? '👁️' : '👁️‍🗨️'}
+                      </button>
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className={`w-full py-3 px-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-bold rounded-lg shadow-lg hover:from-green-700 hover:to-emerald-700 focus:outline-none focus:ring-4 focus:ring-green-300 transition-all transform hover:scale-105 flex items-center justify-center gap-2 ${
+                      loading ? 'opacity-75 cursor-not-allowed' : ''
+                    }`}
+                  >
+                    {loading ? (
+                      <>
+                        <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Signing in...
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                        </svg>
+                        Sign in
+                      </>
+                    )}
+                  </button>
+                </form>
+              </div>
+            )}
+
+            {/* Receptionist Login Form */}
+            {activeTab === 'receptionist' && (
+              <div>
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Username
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                      </div>
+                      <input
+                        type="text"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleInputChange}
+                        className="w-full pl-10 pr-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-colors"
+                        placeholder="Enter your username"
+                        required
+                        disabled={loading}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Password
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
+                      </div>
+                      <input
+                        type={showReceptionistPassword ? 'text' : 'password'}
+                        name="password"
+                        value={formData.password}
+                        onChange={handleInputChange}
+                        className="w-full pl-10 pr-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-colors"
+                        placeholder="············"
+                        required
+                        disabled={loading}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowReceptionistPassword(!showReceptionistPassword)}
+                        disabled={loading}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                      >
+                        {showReceptionistPassword ? '👁️' : '👁️‍🗨️'}
+                      </button>
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className={`w-full py-3 px-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-bold rounded-lg shadow-lg hover:from-green-700 hover:to-emerald-700 focus:outline-none focus:ring-4 focus:ring-green-300 transition-all transform hover:scale-105 flex items-center justify-center gap-2 ${
+                      loading ? 'opacity-75 cursor-not-allowed' : ''
+                    }`}
+                  >
+                    {loading ? (
+                      <>
+                        <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Signing in...
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                        </svg>
+                        Sign in
+                      </>
+                    )}
+                  </button>
+                </form>
+              </div>
+            )}
+
+            {/* Ticket Info Login Form */}
+            {activeTab === 'ticketinfo' && (
+              <div>
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Username
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                      </div>
+                      <input
+                        type="text"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleInputChange}
+                        className="w-full pl-10 pr-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-colors"
+                        placeholder="Enter your username"
+                        required
+                        disabled={loading}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Password
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
+                      </div>
+                      <input
+                        type={showTicketInfoPassword ? 'text' : 'password'}
+                        name="password"
+                        value={formData.password}
+                        onChange={handleInputChange}
+                        className="w-full pl-10 pr-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-colors"
+                        placeholder="············"
+                        required
+                        disabled={loading}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowTicketInfoPassword(!showTicketInfoPassword)}
+                        disabled={loading}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                      >
+                        {showTicketInfoPassword ? '👁️' : '👁️‍🗨️'}
                       </button>
                     </div>
                   </div>
