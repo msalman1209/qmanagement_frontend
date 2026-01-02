@@ -728,11 +728,13 @@ export default function UserManagementPage({ adminId: propAdminId }) {
                 )}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Role <span className="text-red-500">*</span></label>
-                  <select name="role" value={formData.role} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
-                    <option value="user">User</option>
-                    <option value="receptionist">Receptionist</option>
-                  </select>
-                  <p className="mt-1 text-xs text-gray-500">Select user role for login access</p>
+                  <input
+                    type="text"
+                    value="User"
+                    disabled
+                    className="w-full px-4 py-2.5 border border-gray-300 bg-gray-100 rounded-lg text-gray-700 cursor-not-allowed"
+                  />
+                  {/* <p className="mt-1 text-xs text-gray-500">User role is fixed for this form</p> */}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Status</label>
@@ -817,11 +819,13 @@ export default function UserManagementPage({ adminId: propAdminId }) {
                 )}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Role <span className="text-red-500">*</span></label>
-                  <select name="role" value={editForm.role} onChange={handleEditChange} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
-                    <option value="user">User</option>
-                    <option value="receptionist">Receptionist</option>
-                  </select>
-                  <p className="mt-1 text-xs text-gray-500">User role for login access</p>
+                  <input
+                    type="text"
+                    value="User"
+                    disabled
+                    className="w-full px-4 py-2.5 border border-gray-300 bg-gray-100 rounded-lg text-gray-700 cursor-not-allowed"
+                  />
+                  {/* <p className="mt-1 text-xs text-gray-500">User role is fixed</p> */}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Status <span className="text-red-500">*</span></label>
