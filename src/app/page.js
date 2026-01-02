@@ -706,18 +706,19 @@ export default function Home() {
     
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
     
-    // Use Redux token first, fallback to localStorage
-    const logoutToken = token || localStorage.getItem('token');
+    // Use Redux token first, fallback to localStorage/sessionStorage
+    const logoutToken = token || localStorage.getItem('token') || sessionStorage.getItem('token');
     
     console.log('🔴 LOGOUT STARTED');
     console.log('🔍 Token found:', logoutToken ? 'Yes (' + logoutToken.substring(0, 20) + '...)' : 'No');
-    console.log('API URL:', API_URL);
+    console.log('🔍 Current User:', currentUser);
+    console.log('📍 API URL:', API_URL);
     
     try {
       // Call backend logout API to remove session from database
       if (logoutToken) {
         const logoutUrl = `${API_URL}/auth/logout`;
-        console.log('📡 Calling backend:', logoutUrl);
+        console.log('📡 Calling backend logout:', logoutUrl);
         
         const response = await fetch(logoutUrl, {
           method: 'POST',
@@ -727,21 +728,32 @@ export default function Home() {
           },
         });
         
-        console.log('📊 Response Status:', response.status);
+        console.log('📊 Logout Response Status:', response.status);
+        console.log('📊 Response OK:', response.ok);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('❌ Logout Response Error:', errorText);
+          throw new Error(`Logout failed with status ${response.status}: ${errorText}`);
+        }
         
         const data = await response.json();
-        console.log('✅ Backend Response:', data);
+        console.log('✅ Logout Backend Response:', data);
+        console.log('✅ Sessions deleted from database:', data.sessions_deleted);
         
-        if (response.ok && data.success) {
+        if (data.success) {
           console.log('✅ Backend session removed successfully');
         } else {
-          console.error('⚠️ Logout API failed:', response.status, data);
+          console.error('⚠️ Logout API returned success=false:', data);
         }
       } else {
         console.warn('⚠️ No token found - skipping backend call');
+        alert('⚠️ Warning: No authentication token found. Local data will be cleared.');
       }
     } catch (err) {
-      console.error('❌ Logout API Error:', err.message);
+      console.error('❌ Logout API Error:', err);
+      console.error('❌ Error details:', err.message, err.stack);
+      alert('⚠️ Warning: Failed to logout from server. Local session will be cleared anyway.\nError: ' + err.message);
     }
     
     // ALWAYS clear local data regardless of API success
@@ -791,7 +803,7 @@ export default function Home() {
           {/* Action Buttons */}
           <div className="flex items-center gap-4">
             {/* Logout Button - Only show if user has canLogout permission */}
-            {permissions.canLogout && (
+            {/* {permissions.canLogout && ( */}
               <button
                 onClick={handleLogout}
                 disabled={loading}
@@ -802,10 +814,10 @@ export default function Home() {
                 </svg>
                 Logout
               </button>
-            )}
+            {/* )} */}
 
             {/* Reports Button - Only show if user has canViewReports permission */}
-            {permissions.canViewReports && (
+            {/* {permissions.canViewReports && ( */}
               <button
                 onClick={() => {
                   setShowReportsModal(true);
@@ -818,10 +830,10 @@ export default function Home() {
                 </svg>
                 <span className="font-semibold">Reports</span>
               </button>
-            )}
+            {/* )} */}
 
             {/* Recent Tickets Dropdown - Only show if user has canViewRecentTickets permission */}
-            {permissions.canViewRecentTickets && (
+            {/* {permissions.canViewRecentTickets && ( */}
               <div className="relative">
                 <button
                   onClick={() => {
@@ -882,7 +894,7 @@ export default function Home() {
                   </div>
                 )}
               </div>
-            )}
+            {/* // )} */}
           </div>
         </div>
         
