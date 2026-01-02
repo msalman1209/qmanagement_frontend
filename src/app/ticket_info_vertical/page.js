@@ -251,12 +251,24 @@ function TicketInfoContent() {
   const fetchDisplayConfig = async () => {
     try {
       const token = getToken();
+      const user = getUser();
+      
       if (!token) {
         console.warn('⚠️ No token found - cannot fetch display config');
         return;
       }
 
-      const response = await axios.get(`${apiUrl}/counter-display/config`, {
+      // Get admin_id from current user
+      const adminId = user?.admin_id;
+      if (!adminId) {
+        console.error('❌ No admin_id found for ticket_info user:', user);
+        return;
+      }
+
+      console.log('📡 Fetching display config for admin_id:', adminId);
+
+      // Add admin_id as query parameter
+      const response = await axios.get(`${apiUrl}/counter-display/config?adminId=${adminId}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -264,6 +276,8 @@ function TicketInfoContent() {
 
       if (response.data.success) {
         const { config, images } = response.data;
+        
+        console.log('📦 Display config response:', { config, imagesCount: images?.length });
         
         if (config) {
           setLeftLogoUrl(config.left_logo_url || '');
@@ -273,18 +287,27 @@ function TicketInfoContent() {
           setSliderTimer(config.slider_timer || 5);
           setTickerContent(config.ticker_content || 'Welcome to Dubai Economic Department Services');
           
-          console.log('✅ Display config loaded:', config);
+          console.log('✅ Display config loaded:', {
+            leftLogo: config.left_logo_url ? 'Yes' : 'No',
+            rightLogo: config.right_logo_url ? 'Yes' : 'No',
+            contentType: config.content_type,
+            videoUrl: config.video_url ? 'Yes' : 'No'
+          });
         }
         
         // Load selected images for slider
         if (images && images.length > 0) {
           const selectedImages = images.filter(img => img.is_selected === 1);
-          setSliderImages(selectedImages.map(img => `${process.env.NEXT_PUBLIC_API_URL_WS}${img.image_url}`));
-          console.log('✅ Slider images loaded:', selectedImages.length);
+          const imageUrls = selectedImages.map(img => `${process.env.NEXT_PUBLIC_API_URL_WS}${img.image_url}`);
+          setSliderImages(imageUrls);
+          console.log('✅ Slider images loaded:', selectedImages.length, imageUrls);
         }
+      } else {
+        console.error('❌ Display config fetch failed:', response.data);
       }
     } catch (error) {
       console.error('❌ Error fetching display config:', error);
+      console.error('❌ Error details:', error.response?.data || error.message);
     }
   };
 
