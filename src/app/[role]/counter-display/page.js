@@ -584,12 +584,6 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
     <div className="p-6 bg-gray-50 min-h-screen">
       <h1 className="text-2xl font-semibold text-gray-700 mb-6">Counter Display Management</h1>
       
-      {/* DEBUG INFO - Remove after fixing */}
-      <div className="mb-4 p-3 bg-blue-50 border-2 border-blue-300 rounded text-xs">
-        <strong>🔍 DEBUG INFO:</strong> API_URL = {API_URL || 'NOT SET YET'} | 
-        Hostname = {typeof window !== 'undefined' ? window.location.hostname : 'SSR'}
-      </div>
-      
       {/* Success/Error/Info Message */}
       {message.text && (
         <div className={`mb-4 p-4 rounded-lg ${
@@ -819,44 +813,42 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {ticketInfoUsers.map((user) => (
-                <div key={user.id} className="border-2 border-purple-300 rounded-lg p-5 bg-gradient-to-br from-purple-50 to-indigo-50 hover:shadow-lg transition-all">
-                  <div className="flex items-start gap-3">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className="w-12 h-12 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-md">
-                          {user.username?.charAt(0).toUpperCase()}
-                        </div>
-                        <div>
-                          <h3 className="font-bold text-gray-800 text-lg">{user.username}</h3>
-                          <p className="text-xs text-gray-600">{user.email}</p>
-                        </div>
-                      </div>
-                      <div className="mt-3 space-y-2">
-                        <div className="flex gap-2 flex-wrap">
-                          <span className="inline-block px-3 py-1 bg-blue-100 text-blue-700 text-xs rounded-full font-semibold border border-blue-300">
-                            📋 receptionist
-                          </span>
-                          <span className="inline-block px-3 py-1 bg-green-100 text-green-700 text-xs rounded-full font-semibold border border-green-300">
-                            📺 ticket_info
-                          </span>
-                        </div>
-                        <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                          <p className="text-xs text-gray-700">
-                            <span className="font-semibold">🔑 Default Password:</span>
-                            <code className="ml-1 px-2 py-0.5 bg-yellow-100 rounded text-yellow-800 font-mono">QueUser123!</code>
-                          </p>
-                        </div>
-                      </div>
+                <div key={user.id} className="relative border-2 border-purple-300 rounded-lg p-5 bg-gradient-to-br from-purple-50 to-indigo-50 hover:shadow-lg transition-all">
+                  <button
+                    onClick={() => handleEditUser(user)}
+                    className="absolute top-3 right-3 p-2 text-purple-600 hover:text-purple-800 hover:bg-purple-100 rounded-lg transition-colors"
+                    title="Edit User"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                  </button>
+                  
+                  <div className="flex items-center gap-3 mb-3 pr-10">
+                    {/* <div className="w-12 h-12 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-md">
+                      {user.username?.charAt(0).toUpperCase()}
+                    </div> */}
+                    <div>
+                      <h3 className="font-bold text-gray-800 text-lg">{user.username}</h3>
+                      <p className="text-xs text-gray-600">{user.email}</p>
                     </div>
-                    <button
-                      onClick={() => handleEditUser(user)}
-                      className="flex-shrink-0 p-2 text-purple-600 hover:text-purple-800 hover:bg-purple-100 rounded-lg transition-colors"
-                      title="Edit User"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                      </svg>
-                    </button>
+                  </div>
+                  
+                  <div className="mt-3 space-y-2">
+                    <div className="flex gap-2 flex-wrap">
+                      <span className="inline-block px-3 py-1 bg-blue-100 text-blue-700 text-xs rounded-full font-semibold border border-blue-300">
+                        📋 receptionist
+                      </span>
+                      <span className="inline-block px-3 py-1 bg-green-100 text-green-700 text-xs rounded-full font-semibold border border-green-300">
+                        📺 ticket_info
+                      </span>
+                    </div>
+                    {/* <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <p className="text-xs text-gray-700">
+                        <span className="font-semibold">🔑 Default Password:</span>
+                        <code className="ml-1 px-2 py-0.5 bg-yellow-100 rounded text-yellow-800 font-mono">QueUser123!</code>
+                      </p>
+                    </div> */}
                   </div>
                 </div>
               ))}
@@ -865,7 +857,7 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
         </div>
 
         {/* Info Box */}
-        <div className="mt-4 p-4 bg-blue-50 border-2 border-blue-200 rounded-lg">
+        {/* <div className="mt-4 p-4 bg-blue-50 border-2 border-blue-200 rounded-lg">
           <div className="flex items-start gap-3">
             <svg className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -881,7 +873,7 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
               </ul>
             </div>
           </div>
-        </div>
+        </div> */}
       </div>
 
       {/* Content Type Selection Section */}
