@@ -448,7 +448,7 @@ function TicketInfoContent() {
   const translateTicketText = (ticketNumber, counterNumber, langCode) => {
     const translations = {
       'en': {
-        text: `Ticket number ${ticketNumber} please come to counter ${counterNumber}`
+        text: `Ticket number ${ticketNumber} please come to counter number ${counterNumber}`
       },
       'ar-ae': {
         text: `التذكره رقم بي -${ticketNumber} الذهاب إلى الكونتر رقم ${counterNumber}`
