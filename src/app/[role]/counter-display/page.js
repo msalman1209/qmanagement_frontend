@@ -93,6 +93,17 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
   // Helper function to get auth headers
   const getAuthHeaders = () => {
     const token = getToken();
+    console.log('🔐 [getAuthHeaders] Token check:');
+    console.log('   - Token exists:', !!token);
+    console.log('   - Token length:', token?.length || 0);
+    console.log('   - Token preview:', token ? `${token.substring(0, 20)}...` : 'NULL');
+    
+    if (!token) {
+      console.error('❌ [getAuthHeaders] NO TOKEN FOUND! User will get 403 error.');
+      console.error('   - This will cause authentication failure');
+      console.error('   - User should be redirected to login');
+    }
+    
     return {
       'Authorization': `Bearer ${token}`
     };
@@ -100,17 +111,43 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
 
   // Load existing configuration on mount
   useEffect(() => {
+    console.log('🔍 [useEffect] Component mounted - checking authentication');
     const token = getToken();
+    const user = getUser();
+    
+    console.log('🔐 [useEffect] Auth Status:');
+    console.log('   - Token exists:', !!token);
+    console.log('   - Token type:', typeof token);
+    console.log('   - Token length:', token?.length || 0);
+    console.log('   - User exists:', !!user);
+    console.log('   - User data:', JSON.stringify(user, null, 2));
+    console.log('   - Current location:', window.location.href);
+    console.log('   - Environment:', window.location.hostname === 'localhost' ? 'LOCAL' : 'PRODUCTION');
+    
     if (!token) {
+      console.error('❌ [useEffect] No token found in storage!');
+      console.error('   - Checking localStorage:', localStorage.getItem('token') ? 'EXISTS' : 'NULL');
+      console.error('   - Checking sessionStorage:', sessionStorage.getItem('token') ? 'EXISTS' : 'NULL');
       console.warn('⚠️ No token available, redirecting to login');
-      router.push('/login');
+      toast.error('Please login to continue', {
+        position: "top-right",
+        autoClose: 2000
+      });
+      setTimeout(() => router.push('/login'), 1500);
       return;
     }
     
+    console.log('✅ [useEffect] Token found, checking adminId and API_URL');
+    console.log('   - adminId:', adminId);
+    console.log('   - API_URL:', API_URL);
+    
     // ✅ Only fetch if adminId AND API_URL are available
     if (adminId && API_URL) {
+      console.log('✅ [useEffect] All requirements met, fetching data...');
       fetchConfiguration();
       fetchTicketInfoUsers();
+    } else {
+      console.warn('⚠️ [useEffect] Waiting for:', !adminId ? 'adminId' : '', !API_URL ? 'API_URL' : '');
     }
   }, [adminId, API_URL]); // Added API_URL dependency
 
@@ -124,6 +161,18 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
       
       if (!API_URL) {
         console.error('❌ API_URL not initialized yet');
+        return;
+      }
+      
+      // ✅ Check token before making request
+      const token = getToken();
+      if (!token) {
+        console.error('❌ No token found - redirecting to login');
+        toast.error('Session expired. Please login again.', {
+          position: "top-right",
+          autoClose: 3000
+        });
+        setTimeout(() => router.push('/login'), 2000);
         return;
       }
       
@@ -160,6 +209,23 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
       }
     } catch (error) {
       console.error('Error fetching configuration:', error);
+      
+      // ✅ Handle 403 specifically - session expired
+      if (error.response?.status === 403) {
+        console.error('❌ 403 Forbidden - Session expired or invalid');
+        console.error('   - Error message:', error.response?.data?.message);
+        toast.error('🔒 Session expired! Redirecting to login...', {
+          position: "top-right",
+          autoClose: 3000
+        });
+        setTimeout(() => {
+          localStorage.removeItem('token');
+          sessionStorage.removeItem('token');
+          router.push('/login');
+        }, 2000);
+        return;
+      }
+      
       toast.error('Failed to load configuration!', {
         position: "top-right",
         autoClose: 5000,
@@ -182,6 +248,18 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
       
       if (!API_URL) {
         console.warn('⚠️ API_URL not initialized yet');
+        return;
+      }
+      
+      // ✅ Check token before making request
+      const token = getToken();
+      if (!token) {
+        console.error('❌ No token found - redirecting to login');
+        toast.error('Session expired. Please login again.', {
+          position: "top-right",
+          autoClose: 3000
+        });
+        setTimeout(() => router.push('/login'), 2000);
         return;
       }
       
@@ -219,6 +297,23 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
       console.error('❌ Error fetching both user:', error);
       console.error('❌ Error response:', error.response?.data);
       console.error('❌ Error message:', error.message);
+      console.error('❌ Error status:', error.response?.status);
+      
+      // ✅ Handle 403 specifically - session expired
+      if (error.response?.status === 403) {
+        console.error('❌ 403 Forbidden - Session expired or invalid');
+        console.error('   - Backend message:', error.response?.data?.message);
+        console.error('   - Session expired flag:', error.response?.data?.session_expired);
+        toast.error('🔒 Session expired! Redirecting to login...', {
+          position: "top-right",
+          autoClose: 3000
+        });
+        setTimeout(() => {
+          localStorage.removeItem('token');
+          sessionStorage.removeItem('token');
+          router.push('/login');
+        }, 2000);
+      }
     }
   };
 
