@@ -85,7 +85,7 @@ export default function DynamicRoleLayout({ children, params }) {
               </main>
               <footer className="bg-white border-t border-gray-200 px-6 py-3">
                 <p className="text-sm text-gray-600 text-right">
-                  © 2025 Tech Solutionor. All rights reserved.
+                  © 2026 Tech Solutionor. All rights reserved.
                 </p>
               </footer>
             </div>

@@ -4,6 +4,8 @@ import { useRouter } from 'next/navigation';
 import axios from '@/utils/axiosInstance';
 import axiosRaw from 'axios'; // Raw axios for file uploads
 import { getToken, getUser } from '@/utils/sessionStorage';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 
 
@@ -77,7 +79,6 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
   const [sliderTimer, setSliderTimer] = useState(5);
   const [tickerContent, setTickerContent] = useState('Welcome to HAPPINESS LOUNGE BUSINESSMEN SERVICES L.L.C');
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState({ type: '', text: '' });
   
   // Both User Display (automatically created with license)
   const [ticketInfoUsers, setTicketInfoUsers] = useState([]);
@@ -159,13 +160,15 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
       }
     } catch (error) {
       console.error('Error fetching configuration:', error);
-      showMessage('error', 'Failed to load configuration');
+      toast.error('Failed to load configuration!', {
+        position: "top-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
     }
-  };
-
-  const showMessage = (type, text) => {
-    setMessage({ type, text });
-    setTimeout(() => setMessage({ type: '', text: '' }), 5000);
   };
 
   // Fetch Both User (automatically created with license)
@@ -237,7 +240,10 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
     e.preventDefault();
     
     if (!editUserData.username || !editUserData.email) {
-      showMessage('error', 'Username and email are required');
+      toast.error('❌ Username and email are required!', {
+        position: "top-right",
+        autoClose: 5000,
+      });
       return;
     }
 
@@ -262,7 +268,10 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
       });
 
       if (response.data.success) {
-        showMessage('success', 'Both user updated successfully!');
+        toast.success('✅ Both user updated successfully!', {
+          position: "top-right",
+          autoClose: 3000,
+        });
         setShowEditUserModal(false);
         setEditingUser(null);
         setEditUserData({ username: '', email: '', password: '' });
@@ -272,7 +281,44 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
     } catch (error) {
       console.error('❌ Error updating user:', error);
       console.error('Error response:', error.response?.data);
-      showMessage('error', error.response?.data?.message || 'Failed to update user');
+      
+      // ✅ Show backend error message directly to user
+      let errorMessage = '❌ Failed to update user!';
+      
+      if (error.response?.data?.message) {
+        const backendMessage = error.response.data.message;
+        
+        // Check if it's a duplicate error from backend
+        if (backendMessage.includes('username is already taken')) {
+          errorMessage = '❌ ' + backendMessage + '\n\n📝 Please enter a different username.';
+        }
+        else if (backendMessage.includes('email is already registered')) {
+          errorMessage = '❌ ' + backendMessage + '\n\n📧 Please use a different email address.';
+        }
+        else if (backendMessage.includes('Username or email is already in use')) {
+          errorMessage = '❌ ' + backendMessage + '\n\n📝 Please check both fields and change the duplicate one.';
+        }
+        else {
+          // Show any other backend message
+          errorMessage = '❌ ' + backendMessage;
+        }
+      } else if (error.message) {
+        errorMessage = `❌ Error: ${error.message}`;
+      }
+      
+      toast.error(errorMessage, {
+        position: "top-right",
+        autoClose: 10000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        style: {
+          whiteSpace: 'pre-line',
+          fontSize: '15px',
+          fontWeight: '500'
+        }
+      });
     }
   };
 
@@ -303,14 +349,22 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
       // Validate file size (max 200MB for production stability)
       const maxSize = 200 * 1024 * 1024; // 200MB
       if (file.size > maxSize) {
-        showMessage('error', `❌ Video file bohot bari hai!\n\nMaximum size: 200MB\nAapki file: ${fileSizeMB}MB\n\n⚠️ Production server large files handle nahi kar sakta.\nPehle video compress karein:\n• Handbrake software use karein\n• Online compressor: videosmaller.com\n• Target size: 50-150MB`);
+        toast.error(`❌ Video file is too large!\n\nMaximum size: 200MB\nYour file: ${fileSizeMB}MB\n\n⚠️ Production server cannot handle large files.\nPlease compress video first:\n• Use Handbrake software\n• Online compressor: videosmaller.com\n• Target size: 50-150MB`, {
+          position: "top-right",
+          autoClose: 8000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          style: { whiteSpace: 'pre-line' }
+        });
         e.target.value = ''; // Reset file input
         return;
       }
       
       // Warning for large files
       if (file.size > 100 * 1024 * 1024) {
-        if (!confirm(`⚠️ IMPORTANT WARNING ⚠️\n\nVideo size: ${fileSizeMB}MB\n\nUpload mein 5-10 minutes lag sakte hain.\n\nKRIPYA:\n✓ Stable WiFi/Ethernet connection use karein\n✓ Browser window BAND MAT KAREIN\n✓ Laptop charging me laga len\n✓ Koi aur download/upload na karein\n\nContinue karein?`)) {
+        if (!confirm(`⚠️ IMPORTANT WARNING ⚠️\n\nVideo size: ${fileSizeMB}MB\n\nUpload may take 5-10 minutes.\n\nPLEASE:\n✓ Use stable WiFi/Ethernet connection\n✓ DO NOT CLOSE browser window\n✓ Keep laptop plugged in\n✓ Avoid other downloads/uploads\n\nContinue?`)) {
           e.target.value = '';
           return;
         }
@@ -318,7 +372,10 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
       
       // ✅ SIRF FILE STORE KARO - Upload nahi karo
       setUploadedVideo(file);
-      showMessage('success', `✅ Video selected: ${file.name} (${fileSizeMB}MB)\n\n"Update Content" button dabao to upload karein.`);
+      toast.success(`✅ Video selected: ${file.name} (${fileSizeMB}MB)\n\nClick "Update Content" button to upload.`, {
+        position: "top-right",
+        autoClose: 3000
+      });
       console.log('✅ Video file ready for upload on "Update Content" click');
     }
   };
@@ -330,7 +387,15 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
       
       // Validate file type
       if (!file.type.startsWith('image/')) {
-        showMessage('error', 'Please select a valid image file');
+        toast.error('Please select a valid image file', {
+          position: "top-right",
+          autoClose: 8000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          style: { whiteSpace: 'pre-line' }
+        });
         return;
       }
       
@@ -359,13 +424,24 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
         
         if (response.data.success) {
           setLeftLogoUrl(response.data.logoUrl);
-          showMessage('success', 'Left logo uploaded successfully');
+          toast.success('Left logo uploaded successfully', {
+            position: "top-right",
+            autoClose: 3000
+          });
           console.log('✅ Left logo uploaded:', response.data.logoUrl);
         }
       } catch (error) {
         console.error('❌ Error uploading left logo:', error);
         console.error('Error response:', error.response?.data);
-        showMessage('error', error.response?.data?.message || 'Failed to upload left logo');
+        toast.error(error.response?.data?.message || 'Failed to upload left logo', {
+          position: "top-right",
+          autoClose: 8000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          style: { whiteSpace: 'pre-line' }
+        });
       }
     }
   };
@@ -377,7 +453,15 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
       
       // Validate file type
       if (!file.type.startsWith('image/')) {
-        showMessage('error', 'Please select a valid image file');
+        toast.error('Please select a valid image file', {
+          position: "top-right",
+          autoClose: 8000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          style: { whiteSpace: 'pre-line' }
+        });
         return;
       }
       
@@ -390,7 +474,15 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
       if (adminId) {
         formData.append('admin_id', adminId);
       } else {
-        showMessage('error', 'Admin ID is missing. Please login again.');
+        toast.error('Admin ID is missing. Please login again.', {
+          position: "top-right",
+          autoClose: 8000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          style: { whiteSpace: 'pre-line' }
+        });
         return;
       }
       
@@ -406,13 +498,24 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
         
         if (response.data.success) {
           setRightLogoUrl(response.data.logoUrl);
-          showMessage('success', 'Right logo uploaded successfully');
+          toast.success('Right logo uploaded successfully', {
+            position: "top-right",
+            autoClose: 3000
+          });
           console.log('✅ Right logo uploaded:', response.data.logoUrl);
         }
       } catch (error) {
         console.error('❌ Error uploading right logo:', error);
         console.error('Error response:', error.response?.data);
-        showMessage('error', error.response?.data?.message || 'Failed to upload right logo');
+        toast.error(error.response?.data?.message || 'Failed to upload right logo', {
+          position: "top-right",
+          autoClose: 8000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          style: { whiteSpace: 'pre-line' }
+        });
       }
     }
   };
@@ -425,7 +528,15 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
       // Validate file types
       const invalidFiles = files.filter(file => !file.type.startsWith('image/'));
       if (invalidFiles.length > 0) {
-        showMessage('error', 'Please select only image files');
+        toast.error('Please select only image files', {
+          position: "top-right",
+          autoClose: 8000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          style: { whiteSpace: 'pre-line' }
+        });
         return;
       }
       
@@ -437,7 +548,15 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
       if (adminId) {
         formData.append('admin_id', adminId);
       } else {
-        showMessage('error', 'Admin ID is missing. Please login again.');
+        toast.error('Admin ID is missing. Please login again.', {
+          position: "top-right",
+          autoClose: 8000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          style: { whiteSpace: 'pre-line' }
+        });
         return;
       }
       
@@ -460,13 +579,24 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
           }));
           
           setSliderImages([...sliderImages, ...uploadedImages]);
-          showMessage('success', `${uploadedImages.length} images uploaded successfully`);
+          toast.success(`${uploadedImages.length} images uploaded successfully`, {
+            position: "top-right",
+            autoClose: 3000
+          });
           console.log('✅ Images uploaded:', uploadedImages.length);
         }
       } catch (error) {
         console.error('❌ Error uploading images:', error);
         console.error('Error response:', error.response?.data);
-        showMessage('error', error.response?.data?.message || 'Failed to upload images');
+        toast.error(error.response?.data?.message || 'Failed to upload images', {
+          position: "top-right",
+          autoClose: 8000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          style: { whiteSpace: 'pre-line' }
+        });
       }
     }
   };
@@ -481,24 +611,118 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
     });
   };
 
+  // Delete image handler
+  const handleDeleteImage = async (imageId, imageName) => {
+    if (!confirm(`Are you sure you want to delete "${imageName}"?`)) {
+      return;
+    }
+
+    try {
+      const deleteUrl = `${API_URL}/counter-display/image/${imageId}`;
+      console.log('🗑️ Deleting image:', deleteUrl);
+      
+      const response = await axios.delete(deleteUrl, {
+        headers: getAuthHeaders()
+      });
+
+      if (response.data.success) {
+        // Remove from state
+        setSliderImages(sliderImages.filter(img => img.id !== imageId));
+        setSelectedImages(selectedImages.filter(id => id !== imageId));
+        
+        toast.success('Image deleted successfully!', {
+          position: "top-right",
+          autoClose: 3000
+        });
+        console.log('✅ Image deleted successfully');
+      }
+    } catch (error) {
+      console.error('❌ Error deleting image:', error);
+      toast.error(error.response?.data?.message || 'Failed to delete image', {
+        position: "top-right",
+        autoClose: 5000
+      });
+    }
+  };
+
+  // Delete video handler
+  const handleDeleteVideo = async () => {
+    if (!confirm('Are you sure you want to remove the video?')) {
+      return;
+    }
+
+    try {
+      // If there's a saved video URL, delete it from backend
+      if (videoUrl) {
+        const deleteUrl = `${API_URL}/counter-display/delete-video`;
+        console.log('🗑️ Deleting video from server');
+        
+        await axios.post(deleteUrl, 
+          { admin_id: adminId },
+          { headers: getAuthHeaders() }
+        );
+      }
+
+      // Clear from state
+      setUploadedVideo(null);
+      setVideoUrl('');
+      
+      toast.success('Video removed successfully!', {
+        position: "top-right",
+        autoClose: 3000
+      });
+      console.log('✅ Video removed');
+    } catch (error) {
+      console.error('❌ Error deleting video:', error);
+      toast.error(error.response?.data?.message || 'Failed to delete video', {
+        position: "top-right",
+        autoClose: 5000
+      });
+    }
+  };
+
   const handleUpdateContent = async () => {
     setLoading(true);
     
     // Validate before updating
     if (!adminId) {
-      showMessage('error', 'Admin ID is missing. Please login again.');
+      toast.error('Admin ID is missing. Please login again.', {
+        position: "top-right",
+        autoClose: 8000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        style: { whiteSpace: 'pre-line' }
+      });
       setLoading(false);
       return;
     }
     
     if (contentType === 'video' && !videoUrl && !uploadedVideo) {
-      showMessage('error', 'Please upload a video first');
+      toast.error('Please upload a video first', {
+        position: "top-right",
+        autoClose: 8000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        style: { whiteSpace: 'pre-line' }
+      });
       setLoading(false);
       return;
     }
     
     if (contentType === 'images' && selectedImages.length === 0) {
-      showMessage('error', 'Please select at least one image for the slider');
+      toast.error('Please select at least one image for the slider', {
+        position: "top-right",
+        autoClose: 8000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        style: { whiteSpace: 'pre-line' }
+      });
       setLoading(false);
       return;
     }
@@ -508,7 +732,10 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
       
       // ✅ STEP 1: Upload video if a new one is selected
       if (uploadedVideo) {
-        showMessage('info', '⏳ Video upload ho rahi hai... Kripya wait karein...');
+        toast.info('⏳ Video is uploading... Please wait...', {
+          position: "top-right",
+          autoClose: false
+        });
         console.log('📤 Starting video upload...');
         
         const formData = new FormData();
@@ -529,7 +756,10 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
             const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
             console.log(`📊 Upload progress: ${percentCompleted}%`);
             if (percentCompleted % 10 === 0) {
-              showMessage('info', `⏳ Upload progress: ${percentCompleted}%`);
+              toast.info(`⏳ Upload progress: ${percentCompleted}%`, {
+                position: "top-right",
+                autoClose: false
+              });
             }
           }
         });
@@ -537,7 +767,10 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
         if (uploadResponse.data.success) {
           finalVideoUrl = uploadResponse.data.videoUrl;
           console.log('✅ Video uploaded successfully:', finalVideoUrl);
-          showMessage('success', '✅ Video upload successful!');
+          toast.success('✅ Video upload successful!', {
+            position: "top-right",
+            autoClose: 3000
+          });
           setVideoUrl(finalVideoUrl);
           setUploadedVideo(null); // Clear the file after upload
         } else {
@@ -546,7 +779,10 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
       }
       
       // ✅ STEP 2: Update configuration
-      showMessage('info', '💾 Configuration save ho rahi hai...');
+      toast.info('💾 Configuration is being saved...', {
+        position: "top-right",
+        autoClose: false
+      });
       const payload = {
         leftLogoUrl,
         rightLogoUrl,
@@ -569,13 +805,24 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
       });
       
       if (response.data.success) {
-        showMessage('success', '✅ Configuration updated successfully!');
+        toast.success('✅ Configuration updated successfully!', {
+          position: "top-right",
+          autoClose: 3000
+        });
         console.log('✅ Configuration updated successfully');
       }
     } catch (error) {
       console.error('❌ Error updating configuration:', error);
       console.error('Error response:', error.response?.data);
-      showMessage('error', error.response?.data?.message || 'Failed to update configuration');
+      toast.error(error.response?.data?.message || 'Failed to update configuration', {
+        position: "top-right",
+        autoClose: 8000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        style: { whiteSpace: 'pre-line' }
+      });
     } finally {
       setLoading(false);
     }
@@ -585,35 +832,6 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
     <div className="p-6 bg-gray-50 min-h-screen">
       <h1 className="text-2xl font-semibold text-gray-700 mb-6">Counter Display Management</h1>
       
-      {/* Success/Error/Info Message */}
-      {message.text && (
-        <div className={`mb-4 p-4 rounded-lg ${
-          message.type === 'success' 
-            ? 'bg-green-100 border-2 border-green-500 text-green-700' 
-            : message.type === 'info' 
-            ? 'bg-blue-100 border-2 border-blue-500 text-blue-700'
-            : 'bg-red-100 border-2 border-red-500 text-red-700'
-        }`}>
-          <div className="flex items-center gap-2">
-            {message.type === 'success' ? (
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-            ) : message.type === 'info' ? (
-              <svg className="w-5 h-5 animate-spin" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
-              </svg>
-            ) : (
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-              </svg>
-            )}
-            <span className="font-semibold">{message.text}</span>
-          </div>
-        </div>
-      )}
-      
-  
       {/* Edit User Modal */}
       {showEditUserModal && (
         <div className="fixed inset-0 bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -964,15 +1182,26 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
           )}
           
           {/* Video Preview Box */}
-          <div className="border-4 border-dashed border-gray-300 rounded-lg h-80 flex items-center justify-center bg-gray-50">
+          <div className="border-4 border-dashed border-gray-300 rounded-lg h-80 flex items-center justify-center bg-gray-50 relative">
             {(uploadedVideo || videoUrl) ? (
-              <video 
-                src={uploadedVideo ? URL.createObjectURL(uploadedVideo) : `${process.env.NEXT_PUBLIC_API_URL_WS}${videoUrl}`}
-                controls 
-                className="max-h-full max-w-full rounded"
-              >
-                Your browser does not support video playback.
-              </video>
+              <>
+                <video 
+                  src={uploadedVideo ? URL.createObjectURL(uploadedVideo) : `${process.env.NEXT_PUBLIC_API_URL_WS}${videoUrl}`}
+                  controls 
+                  className="max-h-full max-w-full rounded"
+                >
+                  Your browser does not support video playback.
+                </video>
+                <button
+                  onClick={handleDeleteVideo}
+                  className="absolute top-4 right-4 bg-red-600 hover:bg-red-700 text-white p-3 rounded-full shadow-lg transition-colors"
+                  title="Delete Video"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </button>
+              </>
             ) : (
               <div className="text-center text-gray-400">
                 <svg className="mx-auto h-16 w-16 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1076,30 +1305,47 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
                   {sliderImages.map((image) => (
                     <div
                       key={image.id}
-                      onClick={() => toggleImageSelection(image.id)}
-                      className={`relative rounded-lg overflow-hidden cursor-pointer border-3 transition-all transform hover:scale-105 ${
-                        selectedImages.includes(image.id)
-                          ? 'border-green-600 ring-4 ring-green-300 shadow-lg'
-                          : 'border-gray-300 hover:border-green-400 shadow-md'
-                      }`}
+                      className="relative rounded-lg overflow-hidden border-3 transition-all transform hover:scale-105 shadow-md"
                     >
-                      <img
-                        src={image.preview}
-                        alt={image.name}
-                        className="w-full h-32 object-cover"
-                      />
-                      {selectedImages.includes(image.id) && (
-                        <div className="absolute inset-0 bg-green-600/20 flex items-center justify-center">
-                          <div className="bg-green-600 text-white rounded-full p-2">
-                            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
+                      <div
+                        onClick={() => toggleImageSelection(image.id)}
+                        className={`cursor-pointer ${
+                          selectedImages.includes(image.id)
+                            ? 'ring-4 ring-green-300'
+                            : ''
+                        }`}
+                      >
+                        <img
+                          src={image.preview}
+                          alt={image.name}
+                          className="w-full h-32 object-cover"
+                        />
+                        {selectedImages.includes(image.id) && (
+                          <div className="absolute inset-0 bg-green-600/20 flex items-center justify-center pointer-events-none">
+                            <div className="bg-green-600 text-white rounded-full p-2">
+                              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            </div>
                           </div>
+                        )}
+                        <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-xs p-1 truncate">
+                          {image.name}
                         </div>
-                      )}
-                      <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-xs p-1 truncate">
-                        {image.name}
                       </div>
+                      {/* Delete Button */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteImage(image.id, image.name);
+                        }}
+                        className="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white p-1.5 rounded-full shadow-lg transition-colors z-10"
+                        title="Delete Image"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
                     </div>
                   ))}
                 </div>
@@ -1156,6 +1402,8 @@ export default function CounterDisplayPage({ adminId: propAdminId }) {
           )}
         </button>
       </div>
+      
+      <ToastContainer />
     </div>
   );
 }
