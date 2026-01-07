@@ -732,7 +732,7 @@ export default function UserManagementPage({ adminId: propAdminId }) {
                     type="text"
                     value="User"
                     disabled
-                    className="w-full px-4 py-2.5 border border-gray-300 bg-gray-100 rounded-lg text-gray-700 cursor-not-allowed"
+                    className="w-full px-4 py-2.5 border border-gray-300 bg-gray-100 rounded-lg text-black cursor-not-allowed"
                   />
                   {/* <p className="mt-1 text-xs text-gray-500">User role is fixed for this form</p> */}
                 </div>
