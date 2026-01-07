@@ -165,11 +165,11 @@ function BackupRestorePage({ adminId }) {
   return (
     <div className="p-6">
       <div className="max-w-4xl mx-auto">
-        <h2 className="text-2xl font-bold text-gray-800 mb-6">Backup & Restore</h2>
+        <h2 className="text-2xl font-bold text-black mb-6">Backup & Restore</h2>
         
         {/* Create Backup Section */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <h3 className="text-lg font-semibold text-gray-700 mb-4 flex items-center">
+          <h3 className="text-lg font-semibold text-black mb-4 flex items-center">
             <svg className="w-5 h-5 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
@@ -199,7 +199,7 @@ function BackupRestorePage({ adminId }) {
 
         {/* Restore Backup Section */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <h3 className="text-lg font-semibold text-gray-700 mb-4 flex items-center">
+          <h3 className="text-lg font-semibold text-black mb-4 flex items-center">
             <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
             </svg>
@@ -208,7 +208,7 @@ function BackupRestorePage({ adminId }) {
           <p className="text-gray-600 mb-4">Upload a backup file to restore data for Admin ID: {adminId}</p>
           
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Select Backup File (SQL)</label>
+            <label className="block text-sm font-medium text-black mb-2">Select Backup File (SQL)</label>
             <input
               id="fileInput"
               type="file"
@@ -249,7 +249,7 @@ function BackupRestorePage({ adminId }) {
 
         {/* Backup History */}
         <div className="bg-white rounded-lg shadow-md p-6">
-          <h3 className="text-lg font-semibold text-gray-700 mb-4 flex items-center">
+          <h3 className="text-lg font-semibold text-black mb-4 flex items-center">
             <svg className="w-5 h-5 mr-2 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
@@ -267,16 +267,16 @@ function BackupRestorePage({ adminId }) {
               <table className="w-full">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Date</th>
-                    <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Type</th>
-                    <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Status</th>
+                    <th className="px-4 py-2 text-left text-xs font-semibold text-black">Date</th>
+                    <th className="px-4 py-2 text-left text-xs font-semibold text-black">Type</th>
+                    <th className="px-4 py-2 text-left text-xs font-semibold text-black">Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
                   {backupHistory.map((backup, index) => (
                     <tr key={index} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 text-sm text-gray-900">{new Date(backup.created_at).toLocaleString()}</td>
-                      <td className="px-4 py-3 text-sm text-gray-600">{backup.type}</td>
+                      <td className="px-4 py-3 text-sm text-black">{new Date(backup.created_at).toLocaleString()}</td>
+                      <td className="px-4 py-3 text-sm text-black">{backup.type}</td>
                       <td className="px-4 py-3">
                         <span className={`px-2 py-1 text-xs rounded-full ${backup.status === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                           {backup.status}
@@ -453,7 +453,7 @@ export default function ListOfLicensePage() {
     <div className="p-6">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-gray-700 mb-2">License Management</h1>
+        <h1 className="text-2xl font-semibold text-black mb-2">License Management</h1>
         <p className="text-gray-500">Manage and monitor all system licenses</p>
       </div>
 
@@ -461,21 +461,21 @@ export default function ListOfLicensePage() {
       <div className="mb-6 bg-white rounded-lg shadow-md p-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
+            <label className="block text-sm font-medium text-black mb-2">Search</label>
             <input
               type="text"
               placeholder="Search licenses..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none text-black placeholder-gray-500"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Type</label>
+            <label className="block text-sm font-medium text-black mb-2">Type</label>
             <select
               value={filterType}
               onChange={(e) => setFilterType(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none text-black"
             >
               <option value="all">All Types</option>
               <option value="basic">Basic</option>
@@ -485,11 +485,11 @@ export default function ListOfLicensePage() {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+            <label className="block text-sm font-medium text-black mb-2">Status</label>
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none text-black"
             >
               <option value="all">All Status</option>
               <option value="active">Active</option>
@@ -505,12 +505,12 @@ export default function ListOfLicensePage() {
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">License Key</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Admin</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Company</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Type</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Expiry</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-black uppercase tracking-wider">License Key</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-black uppercase tracking-wider">Admin</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-black uppercase tracking-wider">Company</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-black uppercase tracking-wider">Type</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-black uppercase tracking-wider">Expiry</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-black uppercase tracking-wider">Status</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
@@ -524,7 +524,7 @@ export default function ListOfLicensePage() {
                 filteredLicenses.map((license) => (
                   <tr key={license.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4">
-                      <div className="text-sm font-mono font-semibold text-gray-900">{license.license_key}</div>
+                      <div className="text-sm font-mono font-semibold text-black">{license.license_key}</div>
                     </td>
                     <td className="px-6 py-4">
                       <button 
@@ -536,14 +536,14 @@ export default function ListOfLicensePage() {
                       </button>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900">{license.company_name}</div>
+                      <div className="text-sm text-black">{license.company_name}</div>
                       {license.city && <div className="text-xs text-gray-500">{license.city}, {license.country}</div>}
                     </td>
                     <td className="px-6 py-4">
                       {getLicenseTypeBadge(license.license_type)}
                     </td>
                     <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900">{new Date(license.expiry_date).toLocaleDateString()}</div>
+                      <div className="text-sm text-black">{new Date(license.expiry_date).toLocaleDateString()}</div>
                       {license.days_remaining >= 0 && (
                         <div className="text-xs text-gray-500">{license.days_remaining} days left</div>
                       )}

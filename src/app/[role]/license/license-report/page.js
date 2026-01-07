@@ -280,54 +280,54 @@ export default function LicenseReportPage() {
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Company Name</label>
+                    <label className="block text-sm font-medium text-black mb-2">Company Name</label>
                     <input
                       type="text"
                       name="company_name"
                       value={editFormData.company_name}
                       onChange={handleEditFormChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-black"
                       required
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                    <label className="block text-sm font-medium text-black mb-2">Email</label>
                     <input
                       type="email"
                       name="email"
                       value={editFormData.email}
                       onChange={handleEditFormChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-black"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+                    <label className="block text-sm font-medium text-black mb-2">Phone</label>
                     <input
                       type="tel"
                       name="phone"
                       value={editFormData.phone}
                       onChange={handleEditFormChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-black"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">City</label>
+                    <label className="block text-sm font-medium text-black mb-2">City</label>
                     <input
                       type="text"
                       name="city"
                       value={editFormData.city}
                       onChange={handleEditFormChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-black"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Country</label>
+                    <label className="block text-sm font-medium text-black mb-2">Country</label>
                     <input
                       type="text"
                       name="country"
                       value={editFormData.country}
                       onChange={handleEditFormChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-black"
                     />
                   </div>
                 </div>
@@ -414,12 +414,12 @@ export default function LicenseReportPage() {
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">License Type</label>
+                    <label className="block text-sm font-medium text-black mb-2">License Type</label>
                     <select
                       name="license_type"
                       value={editFormData.license_type}
                       onChange={handleEditFormChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-black"
                       required
                     >
                       <option value="trial">Trial</option>
@@ -429,12 +429,12 @@ export default function LicenseReportPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                    <label className="block text-sm font-medium text-black mb-2">Status</label>
                     <select
                       name="status"
                       value={editFormData.status}
                       onChange={handleEditFormChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-black"
                       required
                     >
                       <option value="active">Active</option>
@@ -442,46 +442,46 @@ export default function LicenseReportPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
+                    <label className="block text-sm font-medium text-black mb-2">Start Date</label>
                     <input
                       type="date"
                       name="start_date"
                       value={editFormData.start_date}
                       onChange={handleEditFormChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-black"
                       required
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Expiry Date</label>
+                    <label className="block text-sm font-medium text-black mb-2">Expiry Date</label>
                     <input
                       type="date"
                       name="expiry_date"
                       value={editFormData.expiry_date}
                       onChange={handleEditFormChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-black"
                       required
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Max Users</label>
+                    <label className="block text-sm font-medium text-black mb-2">Max Users</label>
                     <input
                       type="number"
                       name="max_users"
                       value={editFormData.max_users}
                       onChange={handleEditFormChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-black"
                       min="1"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Max Counters</label>
+                    <label className="block text-sm font-medium text-black mb-2">Max Counters</label>
                     <input
                       type="number"
                       name="max_counters"
                       value={editFormData.max_counters}
                       onChange={handleEditFormChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-black"
                       min="1"
                     />
                   </div>
@@ -495,52 +495,52 @@ export default function LicenseReportPage() {
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Max Receptionist Sessions</label>
+                    <label className="block text-sm font-medium text-black mb-2">Max Receptionist Sessions</label>
                     <input
                       type="number"
                       name="max_receptionist_sessions"
                       value={editFormData.max_receptionist_sessions}
                       onChange={handleEditFormChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-black"
                       min="1"
                       max="10"
                     />
                     <p className="text-xs text-gray-500 mt-1">Total receptionist sessions (1-10)</p>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Max Ticket Info Sessions</label>
+                    <label className="block text-sm font-medium text-black mb-2">Max Ticket Info Sessions</label>
                     <input
                       type="number"
                       name="max_ticket_info_sessions"
                       value={editFormData.max_ticket_info_sessions}
                       onChange={handleEditFormChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-black"
                       min="1"
                       max="10"
                     />
                     <p className="text-xs text-gray-500 mt-1">Total ticket info sessions (1-10)</p>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Both User - Receptionist Sessions</label>
+                    <label className="block text-sm font-medium text-black mb-2">Both User - Receptionist Sessions</label>
                     <input
                       type="number"
                       name="both_user_receptionist_sessions"
                       value={editFormData.both_user_receptionist_sessions}
                       onChange={handleEditFormChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-black"
                       min="1"
                       max="10"
                     />
                     <p className="text-xs text-gray-500 mt-1">Sessions for both_user on receptionist screen (1-10)</p>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Both User - Ticket Info Sessions</label>
+                    <label className="block text-sm font-medium text-black mb-2">Both User - Ticket Info Sessions</label>
                     <input
                       type="number"
                       name="both_user_ticket_info_sessions"
                       value={editFormData.both_user_ticket_info_sessions}
                       onChange={handleEditFormChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-black"
                       min="1"
                       max="10"
                     />

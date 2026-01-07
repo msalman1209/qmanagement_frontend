@@ -169,7 +169,7 @@ export default function CreateLicensePage() {
   return (
     <div className="p-6 max-w-4xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+        <h1 className="text-2xl font-bold text-black flex items-center gap-2">
           <FaCog className="text-green-600" />
           Create License
         </h1>
@@ -180,7 +180,7 @@ export default function CreateLicensePage() {
         {/* Company Details */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-black mb-2">
               Company Name *
             </label>
             <input
@@ -188,13 +188,13 @@ export default function CreateLicensePage() {
               name="company_name"
               value={formData.company_name}
               onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-black"
               required
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-black mb-2">
               Phone
             </label>
             <input
@@ -202,14 +202,14 @@ export default function CreateLicensePage() {
               name="phone"
               value={formData.phone}
               onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-black"
             />
           </div>
         </div>
 
         {/* Company Logo Upload */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-black mb-2">
             Company Logo (For Tickets)
           </label>
           <div className="flex items-start gap-4">
@@ -218,7 +218,7 @@ export default function CreateLicensePage() {
                 type="file"
                 accept="image/*"
                 onChange={handleLogoChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-black"
               />
               <p className="text-xs text-gray-500 mt-1">
                 Upload company logo that will appear on tickets (Max 5MB, Image files only)
@@ -238,7 +238,7 @@ export default function CreateLicensePage() {
 
         {/* Address */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-black mb-2">
             Address
           </label>
           <textarea
@@ -246,13 +246,13 @@ export default function CreateLicensePage() {
             value={formData.address}
             onChange={handleChange}
             rows="3"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-black"
           />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-black mb-2">
               City
             </label>
             <input
@@ -260,12 +260,12 @@ export default function CreateLicensePage() {
               name="city"
               value={formData.city}
               onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-black"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-black mb-2">
               Country
             </label>
             <input
@@ -273,7 +273,7 @@ export default function CreateLicensePage() {
               name="country"
               value={formData.country}
               onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-black"
             />
           </div>
         </div>
@@ -281,14 +281,14 @@ export default function CreateLicensePage() {
         {/* License Details */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-black mb-2">
               License Type *
             </label>
             <select
               name="license_type"
               value={formData.license_type}
               onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-black"
               required
             >
               <option value="trial">Trial</option>
@@ -299,14 +299,14 @@ export default function CreateLicensePage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-black mb-2">
               Status
             </label>
             <select
               name="status"
               value={formData.status}
               onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-black"
             >
               <option value="active">Active</option>
               <option value="inactive">Inactive</option>
@@ -317,7 +317,7 @@ export default function CreateLicensePage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-black mb-2">
               Start Date *
             </label>
             <input
@@ -325,13 +325,13 @@ export default function CreateLicensePage() {
               name="start_date"
               value={formData.start_date}
               onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-black"
               required
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-black mb-2">
               Expiry Date *
             </label>
             <input
@@ -339,7 +339,7 @@ export default function CreateLicensePage() {
               name="expiry_date"
               value={formData.expiry_date}
               onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-black"
               required
             />
           </div>
@@ -352,7 +352,7 @@ export default function CreateLicensePage() {
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-black mb-2">
                 Admin Email (Login) *
               </label>
               <input
@@ -360,7 +360,7 @@ export default function CreateLicensePage() {
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
                 placeholder="admin@company.com"
                 required
               />
@@ -368,7 +368,7 @@ export default function CreateLicensePage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-black mb-2">
                 Admin Password *
               </label>
               <div className="relative">
@@ -377,7 +377,7 @@ export default function CreateLicensePage() {
                   name="admin_password"
                   value={formData.admin_password}
                   onChange={handleChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
                   placeholder="Enter password"
                   required
                   minLength="6"
@@ -394,7 +394,7 @@ export default function CreateLicensePage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-black mb-2">
                 Admin Username (Display Name) *
               </label>
               <input
@@ -402,7 +402,7 @@ export default function CreateLicensePage() {
                 name="admin_username"
                 value={formData.admin_username}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
                 placeholder="e.g., John Doe"
                 required
               />
@@ -424,7 +424,7 @@ export default function CreateLicensePage() {
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-black mb-2">
                 Max Users (Total)
               </label>
               <input
@@ -433,13 +433,13 @@ export default function CreateLicensePage() {
                 value={formData.max_users}
                 onChange={handleChange}
                 min="1"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-black"
               />
               <p className="text-xs text-gray-500 mt-1">Total users allowed under this admin</p>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-black mb-2">
                 Max Counters
               </label>
               <input
@@ -448,7 +448,7 @@ export default function CreateLicensePage() {
                 value={formData.max_counters}
                 onChange={handleChange}
                 min="1"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-black"
               />
               <p className="text-xs text-gray-500 mt-1">Maximum counters for queue management</p>
             </div>
@@ -462,7 +462,7 @@ export default function CreateLicensePage() {
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-black mb-2">
                   Receptionist Sessions Each
                 </label>
                 <input
@@ -472,13 +472,13 @@ export default function CreateLicensePage() {
                   onChange={handleChange}
                   min="1"
                   max="5"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-black"
                 />
                 <p className="text-xs text-gray-500 mt-1">Per both_user (1-5)</p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-black mb-2">
                   Ticket Info Sessions Each
                 </label>
                 <input
@@ -488,7 +488,7 @@ export default function CreateLicensePage() {
                   onChange={handleChange}
                   min="1"
                   max="5"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-black"
                 />
                 <p className="text-xs text-gray-500 mt-1">Per both_user (1-5)</p>
               </div>
@@ -498,7 +498,7 @@ export default function CreateLicensePage() {
 
         {/* License Key */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-black mb-2">
             License Key *
           </label>
           <div className="flex gap-2">
@@ -507,7 +507,7 @@ export default function CreateLicensePage() {
               name="license_key"
               value={formData.license_key}
               onChange={handleChange}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-black"
               placeholder="XXXX-XXXX-XXXX-XXXX"
               required
             />
