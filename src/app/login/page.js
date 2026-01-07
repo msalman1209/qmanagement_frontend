@@ -172,8 +172,19 @@ export default function LoginPage() {
         if (!response.ok || !data.success) {
           let errorMsg = data.message || 'Invalid credentials';
           
+          // Handle license specific errors
+          if (data.license_expired) {
+            if (data.admin_info) {
+              errorMsg = `❌ Admin license has expired!\n\n` +
+                        `Admin: ${data.admin_info.username}\n` +
+                        `Email: ${data.admin_info.email}\n\n` +
+                        `📧 Contact your admin or click "Contact Q Tech Support" above.`;
+            } else {
+              errorMsg = '❌ Admin license has expired!\n\n📧 Click "Contact Q Tech Support" link above for assistance.';
+            }
+          }
           // Handle session limit error
-          if (data.session_limit_reached) {
+          else if (data.session_limit_reached) {
             errorMsg = `🚫 ${data.message}\n\nActive Sessions: ${data.active_sessions}/${data.max_sessions}\n\nPlease close an existing session first.`;
           }
           
@@ -220,8 +231,19 @@ export default function LoginPage() {
         if (!response.ok || !data.success) {
           let errorMsg = data.message || 'Invalid credentials';
           
+          // Handle license specific errors
+          if (data.license_expired) {
+            if (data.admin_info) {
+              errorMsg = `❌ Admin license has expired!\n\n` +
+                        `Admin: ${data.admin_info.username}\n` +
+                        `Email: ${data.admin_info.email}\n\n` +
+                        `📧 Contact your admin or click "Contact Q Tech Support" above.`;
+            } else {
+              errorMsg = '❌ Admin license has expired!\n\n📧 Click "Contact Q Tech Support" link above for assistance.';
+            }
+          }
           // Handle session limit error
-          if (data.session_limit_reached) {
+          else if (data.session_limit_reached) {
             errorMsg = `🚫 ${data.message}\n\nActive Sessions: ${data.active_sessions}/${data.max_sessions}\n\nPlease close an existing session first.`;
           }
           
