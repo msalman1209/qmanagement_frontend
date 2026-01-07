@@ -19,7 +19,7 @@ export function middleware(request) {
   }
   
   // Public paths that don't require authentication
-  const publicPaths = ['/login', '/api', '/super-admin-secure-login', '/ticket-info-login', '/receptionist-login']
+  const publicPaths = ['/login', '/api', '/super-admin-secure-login', '/ticket-info-login', '/login']
   const isPublicPath = publicPaths.some(path => pathname.startsWith(path))
   
   // Static files and assets

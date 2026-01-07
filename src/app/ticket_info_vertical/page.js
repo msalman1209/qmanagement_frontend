@@ -141,13 +141,13 @@ function TicketInfoContent() {
     
     if (!token || !user) {
       console.log('🔐 No authentication found, redirecting to ticket-info-login');
-      router.push('/ticket-info-login');
+      router.push('/login');
       return;
     }
 
     if (user.role !== 'ticket_info') {
       console.log('❌ User role is not ticket_info, redirecting to ticket-info-login');
-      router.push('/ticket-info-login');
+      router.push('/login');
       return;
     }
 
@@ -624,42 +624,37 @@ function TicketInfoContent() {
     }
   };
 
-  // ✅ AUTO-ENABLE audio on page load (for display screens)
+  // ✅ Attempt silent audio unlock in background (doesn't hide button)
   useEffect(() => {
-    const autoEnableAudio = async () => {
-      console.log('🔊 Auto-enabling audio for display screen...');
-      
-      // Force enable immediately
-      setAudioEnabled(true);
-      setAudioUnlocked(true);
+    const attemptSilentUnlock = async () => {
+      console.log('🔊 Attempting silent audio unlock...');
       
       try {
-        // Try silent enable first
-        const success = await handleEnableAudio();
-        if (success) {
-          console.log('✅ Audio auto-enabled successfully');
-          return;
+        // Try to unlock AudioContext silently
+        if (typeof window !== 'undefined') {
+          if (!window.audioContext) {
+            window.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          }
+          if (window.audioContext.state === 'suspended') {
+            await window.audioContext.resume();
+          }
         }
+        
+        // Try silent audio (but don't set audioEnabled yet - keep button visible)
+        const silentAudio = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA');
+        silentAudio.volume = 0.001;
+        await silentAudio.play();
+        silentAudio.pause();
+        
+        setAudioUnlocked(true); // Mark as unlocked but keep button visible
+        console.log('✅ Audio unlocked silently (button still visible)');
       } catch (e) {
-        console.log('⚠️ Silent enable failed, audio will play on first announcement');
+        console.log('⚠️ Silent unlock failed - button will be shown');
       }
     };
     
-    // Enable immediately on mount
-    autoEnableAudio();
-    
-    // Also enable on any user interaction (mousemove, scroll, etc)
-    const enableOnInteraction = () => {
-      handleEnableAudio();
-      // Remove listeners after first interaction
-      ['mousemove', 'scroll', 'touchstart', 'click'].forEach(evt => 
-        document.removeEventListener(evt, enableOnInteraction)
-      );
-    };
-    
-    ['mousemove', 'scroll', 'touchstart', 'click'].forEach(evt => 
-      document.addEventListener(evt, enableOnInteraction, { once: true, passive: true })
-    );
+    // Try silent unlock on mount
+    attemptSilentUnlock();
   }, []);
 
   // Silent background audio enabler - no user interaction needed
@@ -1290,6 +1285,19 @@ function TicketInfoContent() {
   return (
     <ProtectedRoute allowedRoles={['ticket_info']}>
       <div className="flex flex-row h-screen w-full bg-white text-white font-sans overflow-hidden">
+      
+      {/* Enable Audio Button - Floating at top */}
+      {!audioEnabled && (
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50">
+          <button
+            onClick={handleEnableAudio}
+            className="bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-8 rounded-lg shadow-2xl text-2xl animate-bounce border-4 border-white"
+          >
+            🔊 Click to Enable Audio
+          </button>
+        </div>
+      )}
+      
       {/* Left Panel: Counter Table */}
       <div className="flex-[0_0_30%] bg-green-700 flex flex-col border-r-[3px] border-[#fdbb2d] overflow-hidden">
         <table className="w-full border-collapse">

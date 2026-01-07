@@ -29,7 +29,7 @@ export default function ProtectedRoute({ children, allowedRoles = [] }) {
         
         // If it's ticket_info role requirement, redirect to ticket-info-login
         if (allowedRoles.length > 0 && allowedRoles.includes('ticket_info')) {
-          router.push('/ticket-info-login');
+          router.push('/login');
         } else {
           router.push('/login');
         }

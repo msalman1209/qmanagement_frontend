@@ -25,8 +25,8 @@ export default function SessionValidator({ children }) {
     const publicRoutes = [
       '/login', 
       '/super-admin-secure-login', 
-      '/ticket-info-login', 
-      '/receptionist-login',
+      '/login', 
+      '/login',
       '/' // Home page
     ];
 
