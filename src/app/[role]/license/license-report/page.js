@@ -821,7 +821,7 @@ export default function LicenseReportPage() {
       )}
 
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+        <h1 className="text-2xl font-bold text-black flex items-center gap-2">
           <FaChartBar className="text-green-600" />
           License Report
         </h1>
@@ -834,7 +834,7 @@ export default function LicenseReportPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 mb-1">Total Licenses</p>
-              <p className="text-3xl font-bold text-gray-800">{stats.total_licenses || 0}</p>
+              <p className="text-3xl font-bold text-black">{stats.total_licenses || 0}</p>
             </div>
             <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
               <FaFileAlt className="text-2xl text-blue-600" />
@@ -894,7 +894,7 @@ export default function LicenseReportPage() {
       {/* License Distribution by Type */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">License Distribution by Type</h2>
+          <h2 className="text-lg font-semibold text-black mb-4">License Distribution by Type</h2>
           <div className="space-y-4">
             {licensesByType.map((item) => {
               const total = stats.total_licenses || 1;
@@ -928,7 +928,7 @@ export default function LicenseReportPage() {
 
         {/* Expiring Soon Licenses */}
         <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">Expiring Soon (Next 30 Days)</h2>
+          <h2 className="text-lg font-semibold text-black mb-4">Expiring Soon (Next 30 Days)</h2>
           <div className="space-y-3 max-h-64 overflow-y-auto">
             {expiringLicenses.map((license) => (
               <div key={license.id} className="border-l-4 border-yellow-500 bg-yellow-50 p-3 rounded">
@@ -954,25 +954,25 @@ export default function LicenseReportPage() {
       {/* Recent Licenses */}
       <div className="bg-white rounded-lg shadow-md p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-800">Recent Licenses</h2>
+          <h2 className="text-lg font-semibold text-black">Recent Licenses</h2>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">License Key</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Company</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Type</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Expiry Date</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Status</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Actions</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-black uppercase">License Key</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-black uppercase">Company</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-black uppercase">Type</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-black uppercase">Expiry Date</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-black uppercase">Status</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-black uppercase">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
               {recentLicenses.map((license) => (
                 <tr key={license.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 text-sm font-mono">{license.license_key}</td>
-                  <td className="px-4 py-3 text-sm">{license.company_name}</td>
+                  <td className="px-4 py-3 text-sm font-mono text-black">{license.license_key}</td>
+                  <td className="px-4 py-3 text-sm text-black">{license.company_name}</td>
                   <td className="px-4 py-3">
                     <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
                       license.license_type === 'trial' ? 'bg-purple-100 text-purple-800' :
@@ -983,7 +983,7 @@ export default function LicenseReportPage() {
                       {license.license_type.toUpperCase()}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-sm">{new Date(license.expiry_date).toLocaleDateString()}</td>
+                  <td className="px-4 py-3 text-sm text-black">{new Date(license.expiry_date).toLocaleDateString()}</td>
                   <td className="px-4 py-3">
                     <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
                       license.license_status === 'expired' ? 'bg-red-100 text-red-800' :
