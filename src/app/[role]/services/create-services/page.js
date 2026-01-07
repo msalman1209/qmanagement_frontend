@@ -211,7 +211,12 @@ export default function CreateServicesPage({ adminId }) {
               <input
                 type="text"
                 value={initialTicket}
-                onChange={(e) => setInitialTicket(e.target.value)}
+                onChange={(e) => {
+                  const value = e.target.value.slice(0, 1).toUpperCase();
+                  setInitialTicket(value);
+                }}
+                maxLength={1}
+                placeholder="A"
                 className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none text-black"
               />
             </div>
