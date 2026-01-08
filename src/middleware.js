@@ -85,9 +85,14 @@ export function middleware(request) {
     return NextResponse.redirect(loginUrl)
   }
   
+  // Allow logout page for all authenticated users
+  if (pathname.match(/^\/(superadmin|admin|user)\/logout$/)) {
+    return NextResponse.next()
+  }
+
   // Validate role-based access
   const roleRouteMapping = {
-    'super_admin': '/superadmin/license/list-of-license',
+    'super_admin': '/superadmin',
     'admin': '/admin',
     'user': '/user',
     'receptionist': '/'
